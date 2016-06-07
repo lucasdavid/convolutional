@@ -5,7 +5,7 @@ Defines cost functions for optimizers used in NN trainining procedures.
 
 import numpy as np
 
-from networks import activations
+from convcuda import activations
 
 
 class QuadraticCost(object):
