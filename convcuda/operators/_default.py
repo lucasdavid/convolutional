@@ -1,5 +1,6 @@
 import numpy as np
 
 ops = {
-    'dot': np.dot
+    'add': np.add,
+    'dot': np.dot,
 }

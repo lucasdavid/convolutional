@@ -27,7 +27,7 @@ class Network(NetworkBase):
     def feedforward(self, a):
         """Return the output of the network if ``a`` is input."""
         for b, w in zip(self.biases, self.weights):
-            a = activations.sigmoid(op.dot(w, a) + b)
+            a = activations.sigmoid(op.add(op.dot(w, a), b))
         return a
 
     def fit(self, training_data, epochs, mini_batch_size, eta,

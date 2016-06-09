@@ -15,6 +15,10 @@ def dot(a, b, out=None):
     return _run_operator('dot', a, b, out=None)
 
 
+def add(a, b, out=None):
+    return _run_operator('add', a, b, out=None)
+
+
 def set_mode(device='default'):
     global _ops
     assert device in ('default', 'cpu', 'gpu')
