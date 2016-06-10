@@ -1,0 +1,5 @@
+MAX_THREADS_PER_BLOCK = 1024
+MAX_BLOCKS_PER_GRID = 65535
+
+grid = (1, 1)
+block = (32, 32, 1)
