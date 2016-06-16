@@ -2,7 +2,6 @@ __global__ void
 mat_dot(float *a, float *b, float *c,
         int a_size_x, int a_size_y, int b_size_x, int b_size_y)
 {
-
     const int i = %(N_THREADS_0)s * blockIdx.x + threadIdx.x,
               j = %(N_THREADS_1)s * blockIdx.y + threadIdx.y;
 

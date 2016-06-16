@@ -6,7 +6,7 @@ from nose_parameterized import parameterized
 from numpy.testing import assert_array_almost_equal
 
 import convcuda.operators as op
-
+from numpy.testing import assert_array_almost_equal
 
 class CudaTest(TestCase):
     def setUp(self):
@@ -93,3 +93,16 @@ class CudaTest(TestCase):
 
         self.assertEqual(actual.shape, shape)
         assert_array_almost_equal(actual, expected, decimal=6)
+
+    @parameterized.expand([
+        ((3, 3,1), (3, 3, 1, 1)),
+    ])
+    def test_conv_op(self, a_shape, b_shape):
+        op.set_mode('dummy')
+        a, k = 10 * np.random.rand(*a_shape), 10 * np.random.rand(*b_shape)
+        a, k = a.astype(int), k.astype(int)
+        actual = op.conv(a, k)
+        expected = np.array([[77,136,89],
+                             [147,227,140],
+                             [91,133,175]])
+        assert_array_almost_equal(actual, expected)

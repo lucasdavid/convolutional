@@ -58,3 +58,6 @@ def scale(alpha, a, out=None):
 
 def hadamard(a, b, out=None):
     return _run_operator('hadamard', a, b, out=out)
+
+def conv(t, tk, stride=(1, 1), padding=(1, 1)):
+    return _run_operator('conv', t, tk, stride=stride, padding=padding)
