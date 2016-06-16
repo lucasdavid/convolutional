@@ -1,11 +1,12 @@
 import os
+import math
 
 import numpy as np
 import pycuda.autoinit
 from pycuda import compiler
 from pycuda.driver import In, Out
 
-from . import settings
+from . import utils, settings
 
 
 def _load_kernels():
@@ -18,11 +19,20 @@ def _load_kernels():
     kernels_folder = os.path.join(kernels_folder, 'kernels')
 
     for k_name in os.listdir(kernels_folder):
-        k_path = os.path.join(kernels_folder, k_name)
+        kernel_file_path = os.path.join(kernels_folder, k_name)
 
-        with open(k_path, 'r') as f:
+        with open(kernel_file_path, 'r') as f:
             kernel = f.read()
-            kernels[k_name] = compiler.SourceModule(kernel)
+
+        # Replace templates with defined settings.
+        kernel = kernel % {
+            'N_THREADS_0': settings.block[0],
+            'N_THREADS_1': settings.block[1],
+            'N_THREADS_2': settings.block[2],
+        }
+
+        # Compile kernel and add it to the kernel map.
+        kernels[k_name] = compiler.SourceModule(kernel)
 
     return kernels
 
@@ -30,25 +40,36 @@ def _load_kernels():
 kernels = _load_kernels()
 
 
-def add(a, b, out=None):
+def _pairwise_operation(k, a, b, out=None):
+    """Perform a kernel assuming its a pairwise operation."""
     assert a.shape == b.shape, \
-        ('Cannot add matrices. Incompatible shapes: %s and %s.' %
-         (a.shape, b.shape))
+        ('Cannot apply %s on matrices. Incompatible shapes: %s and %s.' %
+         (k, a.shape, b.shape))
 
     original_type = a.dtype
     a, b = a.astype(np.float32), b.astype(np.float32)
 
-    if not out: out = np.zeros(a.shape).astype(np.float32)
+    if not out: out = np.empty(a.shape).astype(np.float32)
 
     shape = out.shape
     if len(shape) == 1: shape = (shape[0], 1)
     shape = np.array(shape, dtype=np.int32)
 
-    op = kernels['mat_add_k.cu'].get_function('mat_add')
+    op = kernels[k + '.cu'].get_function(k)
     op(In(a), In(b), Out(out), shape[0], shape[1],
-       grid=settings.grid, block=settings.block)
+       grid=utils.distributed_grid(shape), block=settings.block)
 
     return out.astype(original_type)
+
+
+def add(a, b, out=None):
+    """Compute the Addition of Two Matrices."""
+    return _pairwise_operation('mat_add', a, b, out=out)
+
+
+def hadamard(a, b, out=None):
+    """Compute the Hadamard Product of Two Matrices."""
+    return _pairwise_operation('mat_hadamard', a, b, out=out)
 
 
 def dot(a, b, out=None):
@@ -63,38 +84,14 @@ def dot(a, b, out=None):
         ('Cannot apply dot operator on matrices. '
          'Incompatible shapes: %s and %s.' % (a.shape, b.shape))
 
-    if not out: out = np.zeros((a.shape[0], b.shape[1])).astype(np.float32)
+    shape = (a.shape[0], b.shape[1])
+    if not out: out = np.empty(shape).astype(np.float32)
 
-    op = kernels['mat_dot_k.cu'].get_function('mat_dot')
+    op = kernels['mat_dot.cu'].get_function('mat_dot')
     op(In(a), In(b), Out(out),
        np.int32(a.shape[0]), np.int32(a.shape[1]),
        np.int32(b.shape[0]), np.int32(b.shape[1]),
-       grid=settings.grid, block=settings.block)
-
-    return out.astype(original_type)
-
-
-def hadamard(a, b, out=None):
-    assert a.shape == b.shape, \
-        ('Cannot apply hadamard operator onto matrices. Incompatible shapes: '
-         '%s and %s.' % (a.shape, b.shape))
-
-    # Convert to float32 array, but keep the original
-    # type so we can return a consistent answer.
-    original_type = a.dtype
-    a, b = a.astype(np.float32), b.astype(np.float32)
-
-    if out is None: out = np.zeros_like(a)
-
-    # Convert shapes such as (100,) to (100, 1).
-    shape = out.shape
-    if len(shape) == 1: shape = (shape[0], 1)
-    shape = np.array(shape, dtype=np.int32)
-
-    # Retrieve Hadamard kernel and execute it.
-    op = kernels['mat_hadamard_k.cu'].get_function('mat_hadamard')
-    op(In(a), In(b), Out(out), shape[0], shape[1],
-       grid=settings.grid, block=settings.block)
+       grid=utils.distributed_grid(shape), block=settings.block)
 
     return out.astype(original_type)
 

@@ -5,11 +5,14 @@ Train a simple Feed-forward neural network to recognize the mnist data set.
 Author: Lucas David -- <ld492@drexel.edu>
 License: MIT License 2016 (c)
 """
-from convcuda import Network, costs
+import numpy
+
 from convcuda import operators
 from convcuda.utils import Timer, mnist_loader
 
 operators.set_mode('gpu')
+
+from sklearn.neural_network import MLPClassifier
 
 
 def main():
@@ -18,12 +21,13 @@ def main():
         print('Loading MNIST dataset...')
         data = dict(zip(('train', 'valid', 'test'),
                         mnist_loader.load_data_wrapper()))
+        X, y = data['train']
         print('Done (%s).' % t.get_time_hhmmss())
 
         print('Training our model...')
-        nn = Network([784, 50, 30, 10], cost=costs.CrossEntropyCost)
-        nn.fit(data['train'], 30, 10, .1, evaluation_data=data['test'],
-               monitor_training_accuracy=True, monitor_evaluation_accuracy=True)
+        nn = MLPClassifier([784, 392, 196], verbose=True)
+        nn.fit(X, y)
+
         print('Done (%s)' % t.get_time_hhmmss())
 
     except KeyboardInterrupt:
