@@ -86,7 +86,8 @@ class Network(NetworkBase):
                 accuracy = self.accuracy(evaluation_data)
                 evaluation_accuracy.append(accuracy)
                 print("Accuracy on evaluation data: %i%%"
-                      % int(100 * float(self.accuracy(evaluation_data)) / n_data))
+                      % int(
+                    100 * float(self.accuracy(evaluation_data)) / n_data))
             print('')
 
         return (evaluation_cost, evaluation_accuracy,
@@ -104,12 +105,14 @@ class Network(NetworkBase):
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         for x, y in mini_batch:
             delta_nabla_b, delta_nabla_w = self.backprop(x, y)
-            nabla_b = [nb + dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
-            nabla_w = [nw + dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
-        self.weights = [
-            (1 - eta * (lmbda / n)) * w - (eta / len(mini_batch)) * nw
-            for w, nw in zip(self.weights, nabla_w)]
-        self.biases = [b - (eta / len(mini_batch)) * nb
+            nabla_b = [op.add(nb, dnb) for nb, dnb in
+                       zip(nabla_b, delta_nabla_b)]
+            nabla_w = [op.add(nw, dnw) for nw, dnw in
+                       zip(nabla_w, delta_nabla_w)]
+        self.weights = [(op.scale((1 - eta * (lmbda / n)), w) -
+                         op.scale(eta / len(mini_batch), nw))
+                        for w, nw in zip(self.weights, nabla_w)]
+        self.biases = [b - op.scale(eta / len(mini_batch), nb)
                        for b, nb in zip(self.biases, nabla_b)]
 
     def backprop(self, x, y):
@@ -124,12 +127,12 @@ class Network(NetworkBase):
         os = [x]  # list to store all the activations, layer by layer
         zs = []  # list to store all the z vectors, layer by layer
         for b, w in zip(self.biases, self.weights):
-            z = op.dot(w, output) + b
+            z = op.add(op.dot(w, output), b)
             zs.append(z)
             output = activations.sigmoid(z)
             os.append(output)
         # backward pass
-        delta = (self.cost).delta(zs[-1], os[-1], y)
+        delta = self.cost.delta(zs[-1], os[-1], y)
         nabla_b[-1] = delta
         nabla_w[-1] = op.dot(delta, os[-2].transpose())
         # Note that the variable l in the loop below is used a little
@@ -141,7 +144,8 @@ class Network(NetworkBase):
         for l in range(2, self.num_layers):
             z = zs[-l]
             sp = activations.sigmoid_prime(z)
-            delta = op.dot(self.weights[-l + 1].transpose(), delta) * sp
+            delta = op.scale(sp, op.dot(self.weights[-l + 1].transpose(),
+                                        delta))
             nabla_b[-l] = delta
             nabla_w[-l] = op.dot(delta, os[-l - 1].transpose())
-        return (nabla_b, nabla_w)
+        return nabla_b, nabla_w

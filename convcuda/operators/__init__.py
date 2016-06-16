@@ -1,7 +1,7 @@
-from . import _default, _cuda
+from . import _default, _cuda, _dummy
 
 # Map of Operators.
-_ops = _default.ops
+_operations = _default.operations
 
 
 def set_mode(device='default'):
@@ -11,13 +11,15 @@ def set_mode(device='default'):
         which device should perform the operations. 'default' and 'cpu' will
         execute with numpy.
     """
-    global _ops
-    assert device in ('default', 'cpu', 'gpu')
+    global _operations
+    assert device in ('default', 'dummy', 'cpu', 'gpu')
 
     if device in ('default', 'cpu'):
-        _ops = _default.ops
+        _operations = _default.operations
+    if device == 'dummy':
+        _operations = _dummy.operations
     if device == 'gpu':
-        _ops = _cuda.ops
+        _operations = _cuda.operations
 
 
 # Operator Wrappers.
@@ -32,10 +34,10 @@ def _run_operator(op, *args, **kwargs):
     :param kwargs: key arguments for the operation.
     :return: the operation result.
     """
-    if op not in _ops:
+    if op not in _operations:
         raise ValueError('Cannot find %s operator' % op)
 
-    return _ops[op](*args, **kwargs)
+    return _operations[op](*args, **kwargs)
 
 
 def dot(a, b, out=None):
@@ -44,6 +46,14 @@ def dot(a, b, out=None):
 
 def add(a, b, out=None):
     return _run_operator('add', a, b, out=out)
+
+
+def sub(a, b, out=None):
+    return _run_operator('sub', a, b, out=out)
+
+
+def scale(alpha, a, out=None):
+    return _run_operator('scale', alpha, a, out=out)
 
 
 def hadamard(a, b, out=None):

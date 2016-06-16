@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 import numpy as np
+import time
 from nose_parameterized import parameterized
 from numpy.testing import assert_array_almost_equal
 
@@ -28,8 +29,23 @@ class CudaTest(TestCase):
         assert_array_almost_equal(actual, expected, decimal=6)
 
     @parameterized.expand([
+        ((1, 1),),
+        ((32, 32),),
+        ((124, 43),),
+        ((1066, 1024),),
+    ])
+    def test_sub_operator(self, expected_shape):
+        a, b = np.random.rand(*expected_shape), np.random.rand(*expected_shape)
+
+        expected = a - b
+        actual = op.sub(a, b)
+
+        self.assertEqual(actual.shape, expected_shape)
+        assert_array_almost_equal(actual, expected, decimal=6)
+
+    @parameterized.expand([
         ((1, 1), (1, 1),),
-        ((24, 24), (24, 24),),
+        ((12, 24), (24, 32),),
         ((243, 45), (45, 67),),
     ])
     def test_dot_operator(self, expected_s_a, espected_s_b):
@@ -58,4 +74,22 @@ class CudaTest(TestCase):
 
         self.assertEqual(actual.shape, shape)
         # Almost equal is required because my video card only accepts float32.
+        assert_array_almost_equal(actual, expected, decimal=6)
+
+    @parameterized.expand([
+        ((1, 1),),
+        ((32, 32),),
+        ((125, 35),),
+        ((4014, 1025),),
+        ((4096, 4096),),
+    ])
+    def test_scale_operator(self, shape):
+        alpha, a = np.random.rand(), np.random.randn(*shape)
+
+        expected = alpha * a
+        actual = op.scale(alpha, a)
+
+        c = expected - actual
+
+        self.assertEqual(actual.shape, shape)
         assert_array_almost_equal(actual, expected, decimal=6)

@@ -1,11 +1,9 @@
 import os
-import math
 
 import numpy as np
 import pycuda.autoinit
 from pycuda import compiler
 from pycuda.driver import In, Out
-
 from . import utils, settings
 
 
@@ -49,14 +47,14 @@ def _pairwise_operation(k, a, b, out=None):
     original_type = a.dtype
     a, b = a.astype(np.float32), b.astype(np.float32)
 
-    if not out: out = np.empty(a.shape).astype(np.float32)
+    if not out: out = np.empty(a.shape, dtype=np.float32)
 
     shape = out.shape
     if len(shape) == 1: shape = (shape[0], 1)
-    shape = np.array(shape, dtype=np.int32)
 
     op = kernels[k + '.cu'].get_function(k)
-    op(In(a), In(b), Out(out), shape[0], shape[1],
+    op(In(a), In(b), Out(out),
+       np.int32(shape[0]), np.int32(shape[1]),
        grid=utils.distributed_grid(shape), block=settings.block)
 
     return out.astype(original_type)
@@ -65,6 +63,11 @@ def _pairwise_operation(k, a, b, out=None):
 def add(a, b, out=None):
     """Compute the Addition of Two Matrices."""
     return _pairwise_operation('mat_add', a, b, out=out)
+
+
+def sub(a, b, out=None):
+    """Compute the Subtraction of Two Matrices."""
+    return _pairwise_operation('mat_sub', a, b, out=out)
 
 
 def hadamard(a, b, out=None):
@@ -96,8 +99,27 @@ def dot(a, b, out=None):
     return out.astype(original_type)
 
 
-ops = {
+def scale(alpha, a, out=None):
+    original_type = a.dtype
+    a = a.astype(np.float32)
+
+    if not out: out = np.empty(a.shape, dtype=np.float32)
+
+    shape = a.shape
+    if len(shape) == 1: shape = (shape[0], 1)
+
+    op = kernels['mat_scale.cu'].get_function('mat_scale')
+    op(np.float32(alpha), In(a), Out(out),
+       np.int32(shape[0]), np.int32(shape[1]),
+       grid=utils.distributed_grid(shape), block=settings.block)
+
+    return out.astype(original_type)
+
+
+operations = {
     'add': add,
+    'sub': sub,
     'dot': dot,
-    'hadamard': hadamard
+    'hadamard': hadamard,
+    'scale': scale,
 }

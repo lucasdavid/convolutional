@@ -1,8 +1,9 @@
 import json
-import numpy as np
 import sys
 
-from .. import costs, utils
+import numpy as np
+
+from .. import operators as op, costs, utils
 
 
 class NetworkBase(object):
@@ -36,7 +37,7 @@ class NetworkBase(object):
 
         """
         self.biases = [np.random.randn(y, 1) for y in self.sizes[1:]]
-        self.weights = [np.random.randn(y, x) / np.sqrt(x)
+        self.weights = [op.scale(1 / np.sqrt(x), np.random.randn(y, x))
                         for x, y in zip(self.sizes[:-1], self.sizes[1:])]
 
     def large_weight_initializer(self):
