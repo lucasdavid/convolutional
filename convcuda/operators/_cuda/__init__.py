@@ -4,7 +4,8 @@ import numpy as np
 import pycuda.autoinit
 from pycuda import compiler
 from pycuda.driver import In, Out
-from . import utils, settings
+from . import utils
+from ... import settings
 
 
 def _load_kernels():
@@ -12,7 +13,7 @@ def _load_kernels():
 
     :return: a list of compiled kernels.
     """
-    kernels = {}
+    kernel_map = {}
     kernels_folder = os.path.dirname(os.path.realpath(__file__))
     kernels_folder = os.path.join(kernels_folder, 'kernels')
 
@@ -30,9 +31,9 @@ def _load_kernels():
         }
 
         # Compile kernel and add it to the kernel map.
-        kernels[k_name] = compiler.SourceModule(kernel)
+        kernel_map[k_name] = compiler.SourceModule(kernel)
 
-    return kernels
+    return kernel_map
 
 
 kernels = _load_kernels()
@@ -116,10 +117,20 @@ def scale(alpha, a, out=None):
     return out.astype(original_type)
 
 
+def sum(a, axis=None, dtype=None, out=None, keepdims=False):
+    raise NotImplementedError
+
+
+def conv(t, tk, stride=(1, 1), padding=(1, 1)):
+    raise NotImplementedError
+
+
 operations = {
     'add': add,
     'sub': sub,
     'dot': dot,
     'hadamard': hadamard,
     'scale': scale,
+    'sum': sum,
+    'conv': conv,
 }

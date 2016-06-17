@@ -1,6 +1,6 @@
 import math
 
-from . import settings
+from ... import settings
 
 
 def distributed_grid(shape):

@@ -34,12 +34,12 @@ def dot(a, b, out=None):
          'Incompatible shapes: %s and %s.' % (a.shape, b.shape))
 
     shape = a.shape[0], b.shape[1]
-    out = out or np.zeros(shape)
+    if out is None: out = np.zeros(shape)
 
     for i in range(shape[0]):
         for j in range(shape[1]):
             for k in range(a.shape[1]):
-                out += a[i][k] * b[k][j]
+                out[i, j] += a[i, k] * b[k, j]
 
     return out
 
@@ -55,44 +55,52 @@ def scale(alpha, a, out=None):
     return out
 
 
-def _cut(t, interval_x, interval_y, channel):
-    out = np.empty(t.shape[:2])
-    for i in range(*interval_x):
-        for j in range(*interval_y):
-            if i < 0 or i >= t.shape[0] or j < 0 or j >= t.shape[1]:
-                out[i][j] = 0
-            else:
-                out[i][j] = t[i][j][channel]
-    return out
+def sum(a, axis=None, dtype=None, out=None, keepdims=False):
+    if axis is None:
+        out = 0
+
+        for n in a.ravel():
+            out += n
+
+        return out
+
+    if not -1 < axis < 2: raise ValueError('\'axis\' entry is out of bounds')
+
+    n_elements = a.shape[1 - axis]
+    if out is None: out = np.zeros(n_elements)
+    assert out.shape in (n_elements, (n_elements,)), \
+        'Invalid size for out. It should have exactly %i' % n_elements
+
+    for i in range(n_elements):
+        for j in range(a.shape[axis]):
+            out[i] += a[j, i] if axis == 0 else a[i, j]
+
+    return out if dtype is None else out.astype(dtype)
 
 
-def sum(a):
-    out = 0
-    for n in a.ravel():
-        out += n
-    return out
-
-
-def conv(t, tk, stride=(1, 1), padding=(1, 1)):
-    n_kernels = tk.shape[3]
+def conv(t, tk, stride=(1, 1), padding=(1, 1), out=None):
     n_channels = t.shape[2]
-    kernel_size = tk.shape[:2]
-    activations = np.empty(t.shape[:2])
+    n_kernels = tk.shape[2]
+
+    if out is None:
+        out = np.empty((t.shape[0], t.shape[1], n_kernels))
+
     for i in range(t.shape[0]):
         for j in range(t.shape[1]):
             for k in range(n_kernels):
-                kernel = tk[:, :, :, k]
-                kernel = kernel.reshape(kernel.shape[:2])
-                kernel_sum = 0
+                convolution = 0
                 for l in range(n_channels):
-                    st = _cut(t,
-                              (i - (kernel_size[0] - 1) // 2,
-                               i + (kernel_size[0] - 1) // 2),
-                              (j - (kernel_size[1] - 1) // 2,
-                               j + (kernel_size[1] - 1) // 2), l)
-                    kernel_sum += sum(hadamard(st, kernel, st))
-                activations[i][j] = kernel_sum
-    return activations
+                    _i, _j = i - tk.shape[0] // 2, j - tk.shape[1] // 2
+
+                    for m in range(tk.shape[0]):
+                        for n in range(tk.shape[1]):
+                            if -1 < _i + m < t.shape[0] and -1 < _j + n < \
+                                    t.shape[1]:
+                                convolution += t[_i + m, _j + n, l] * tk[
+                                    m, n, k]
+
+                out[i, j, k] = convolution
+    return out
 
 
 operations = {
@@ -101,6 +109,6 @@ operations = {
     'hadamard': hadamard,
     'dot': dot,
     'scale': scale,
-    'conv': conv,
     'sum': sum,
+    'conv': conv,
 }

@@ -1,25 +1,36 @@
-from . import _default, _cuda, _dummy
+from . import _sequential, _vectorized, _cuda
+from .. import settings
 
-# Map of Operators.
-_operations = _default.operations
+# Operators map.
+_operations = None
 
 
-def set_mode(device='default'):
-    """Set operation mode by switching the map of operators.
+def set_mode(device):
+    """Set The Operation Mode by Switching The Map of Operators.
 
-    :param device: str, ('default', 'cpu' or 'gpu'):
-        which device should perform the operations. 'default' and 'cpu' will
-        execute with numpy.
+    :param device: str, ('default', 'sequential', 'vectorized' or 'gpu'):
+        which device should perform the operations.
+
+        Options are:
+        * 'default' and 'vectorized' will execute with numpy.
+        * 'sequential' implements the operations as they would usually be
+          on the programming language C.
+        * 'gpu' uses the CUDA interface to make the
+          computations in the GPU device.
     """
     global _operations
-    assert device in ('default', 'dummy', 'cpu', 'gpu')
+    assert device in ('default', 'sequential', 'vectorized', 'gpu')
 
-    if device in ('default', 'cpu'):
-        _operations = _default.operations
-    if device == 'dummy':
-        _operations = _dummy.operations
-    if device == 'gpu':
+    if device in ('default', 'vectorized'):
+        _operations = _vectorized.operations
+    elif device == 'sequential':
+        _operations = _sequential.operations
+    elif device == 'gpu':
         _operations = _cuda.operations
+
+
+# Set operation mode to the default.
+set_mode(settings.DEFAULT_OPERATION_MODE)
 
 
 # Operator Wrappers.
@@ -35,7 +46,7 @@ def _run_operator(op, *args, **kwargs):
     :return: the operation result.
     """
     if op not in _operations:
-        raise ValueError('Cannot find %s operator' % op)
+        raise ValueError('%s operator is not defined' % op)
 
     return _operations[op](*args, **kwargs)
 
@@ -59,5 +70,12 @@ def scale(alpha, a, out=None):
 def hadamard(a, b, out=None):
     return _run_operator('hadamard', a, b, out=out)
 
-def conv(t, tk, stride=(1, 1), padding=(1, 1)):
-    return _run_operator('conv', t, tk, stride=stride, padding=padding)
+
+def sum(a, axis=None, dtype=None, out=None, keepdims=False):
+    return _run_operator('sum', a,
+                         axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+
+
+def conv(t, tk, stride=(1, 1), padding=(1, 1), out=None):
+    return _run_operator('conv', t, tk,
+                         stride=stride, padding=padding, out=out)

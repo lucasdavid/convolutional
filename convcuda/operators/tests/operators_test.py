@@ -1,17 +1,16 @@
+import abc
 from unittest import TestCase
 
 import numpy as np
-import time
 from nose_parameterized import parameterized
 from numpy.testing import assert_array_almost_equal
 
 import convcuda.operators as op
-from numpy.testing import assert_array_almost_equal
 
-class CudaTest(TestCase):
+
+class _BaseTest(TestCase, metaclass=abc.ABCMeta):
     def setUp(self):
         np.random.seed(0)
-        op.set_mode('gpu')
 
     @parameterized.expand([
         ((1, 1),),
@@ -95,14 +94,47 @@ class CudaTest(TestCase):
         assert_array_almost_equal(actual, expected, decimal=6)
 
     @parameterized.expand([
-        ((3, 3,1), (3, 3, 1, 1)),
+        ((3, 3, 1), (3, 3, 1), np.array([[[77], [136], [89]],
+                                          [[179], [227], [137]],
+                                          [[91], [165], [175]]])),
+        ((2, 2, 1), (3, 3, 2), np.array([[[112, 128], [105, 176]],
+                                         [[113, 115], [115, 161]]])),
     ])
-    def test_conv_op(self, a_shape, b_shape):
-        op.set_mode('dummy')
+    def test_conv_operator(self, a_shape, b_shape, expected):
         a, k = 10 * np.random.rand(*a_shape), 10 * np.random.rand(*b_shape)
         a, k = a.astype(int), k.astype(int)
+
         actual = op.conv(a, k)
-        expected = np.array([[77,136,89],
-                             [147,227,140],
-                             [91,133,175]])
         assert_array_almost_equal(actual, expected)
+
+    @parameterized.expand([
+        ((1, 1),),
+        ((10, 10),),
+        ((32, 17),),
+        ((40,),),
+        ((30, 1230, 412, 3,),),
+    ])
+    def test_sum(self, a_shape):
+        a = np.random.rand(*a_shape)
+        expected = np.sum(a)
+        actual = op.sum(a)
+
+        self.assertAlmostEqual(expected, actual, delta=.000001)
+
+
+class SequentialTest(_BaseTest):
+    def setUp(self):
+        super().setUp()
+        op.set_mode('sequential')
+
+
+class VectorizedTest(_BaseTest):
+    def setUp(self):
+        super().setUp()
+        op.set_mode('vectorized')
+
+
+class GpuTest(_BaseTest):
+    def setUp(self):
+        super().setUp()
+        op.set_mode('gpu')

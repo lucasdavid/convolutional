@@ -22,5 +22,6 @@ operations = {
     'sub': np.subtract,
     'dot': np.dot,
     'hadamard': hadamard,
-    'scale': scale
+    'scale': scale,
+    'sum': np.sum,
 }
