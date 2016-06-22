@@ -44,6 +44,7 @@ class _BaseTest(TestCase, metaclass=abc.ABCMeta):
 
     @parameterized.expand([
         ((1, 1), (1, 1),),
+        ((2, 4), (4, 2),),
         ((12, 24), (24, 32),),
         ((243, 45), (45, 67),),
     ])
@@ -59,7 +60,8 @@ class _BaseTest(TestCase, metaclass=abc.ABCMeta):
     @parameterized.expand([
         ((1, 1),),
         ((32, 32),),
-        ((125, 35),),
+        ((50, 15),),
+        ((3, 24),),
         ((4014, 1025),),
         ((4096, 4096),),
     ])
@@ -77,6 +79,8 @@ class _BaseTest(TestCase, metaclass=abc.ABCMeta):
 
     @parameterized.expand([
         ((1, 1),),
+        ((32, 1),),
+        ((1, 32),),
         ((32, 32),),
         ((125, 35),),
         ((4014, 1025),),
@@ -95,8 +99,8 @@ class _BaseTest(TestCase, metaclass=abc.ABCMeta):
 
     @parameterized.expand([
         ((3, 3, 1), (3, 3, 1), np.array([[[77], [136], [89]],
-                                          [[179], [227], [137]],
-                                          [[91], [165], [175]]])),
+                                         [[179], [227], [137]],
+                                         [[91], [165], [175]]])),
         ((2, 2, 1), (3, 3, 2), np.array([[[112, 128], [105, 176]],
                                          [[113, 115], [115, 161]]])),
     ])
@@ -114,12 +118,12 @@ class _BaseTest(TestCase, metaclass=abc.ABCMeta):
         ((40,),),
         ((30, 1230, 412, 3,),),
     ])
-    def test_sum(self, a_shape):
+    def test_sum_operator(self, a_shape):
         a = np.random.rand(*a_shape)
         expected = np.sum(a)
         actual = op.sum(a)
 
-        self.assertAlmostEqual(expected, actual, delta=.000001)
+        self.assertAlmostEqual(expected, actual, delta=.00001)
 
 
 class SequentialTest(_BaseTest):

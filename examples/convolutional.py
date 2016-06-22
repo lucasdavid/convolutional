@@ -5,21 +5,15 @@ Train a simple Feed-forward neural network to recognize the mnist data set.
 Author: Lucas David -- <ld492@drexel.edu>
 License: MIT License 2016 (c)
 """
+import numpy
 
-from convcuda import networks, `
+from convcuda import operators
 from convcuda.utils import Timer, dataset_loader
 
 # operators.set_mode('sequential')
-# operators.set_mode('gpu')
+operators.set_mode('gpu')
 
-
-PARAMS = {
-    'epochs': 1000,
-    'n_batch': 10,
-    'eta': .1,
-    'regularization': 0,
-    'verbose': True
-}
+from convcuda.networks import FullyConnected
 
 
 def main():
@@ -27,22 +21,23 @@ def main():
     try:
         print('Loading MNIST dataset...')
         data = dict(zip(('train', 'valid', 'test'),
-                        dataset_loader.load_data()))
+                        dataset_loader.load_data_wrapper()))
+        X, y = data['train']
         print('Done (%s).' % t.get_time_hhmmss())
 
         print('Training our model...')
 
-        with Device('gpu'):
-            # Training with the GPU.
-            nn = networks.FullyConnected([784, 392, 10], **PARAMS)
-            nn.fit(*data['train'])
+        nn = ComposedNetwork(
+            ConvolutionalNeuralNetwork((
+                [3, 3, 30],
+                [3, 3, 100],
+            )),
+            FullyConnected([784, 392, 196]),
+        )
 
+        nn.fit(X, y)
         print('Done (%s)' % t.get_time_hhmmss())
-
-        # Testing with the default (vectorized) device.
-        with Device('vectorized'):
-            score = nn.score(*data['test'])
-        print('Score: %.4f' % score)
+        print('Accuracy: %.2f' % nn.accuracy(data['test']))
 
     except KeyboardInterrupt:
         print('Interrupted by user (%s)' % t.get_time_hhmmss())

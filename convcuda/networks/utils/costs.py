@@ -4,8 +4,9 @@ Defines cost functions for optimizers used in NN trainining procedures.
 """
 
 import numpy as np
+from .one_hot import one_hot_encoding
 
-from convcuda import activations
+from sklearn.neural_network.multilayer_perceptron import DERIVATIVES
 
 
 class QuadraticCost(object):
@@ -18,7 +19,7 @@ class QuadraticCost(object):
     @staticmethod
     def delta(z, a, y):
         """Return the error delta from the output layer."""
-        return (a - y) * activations.sigmoid_prime(z)
+        return (a - y) * DERIVATIVES['logistic'](a)
 
 
 class CrossEntropyCost(object):
@@ -42,4 +43,6 @@ class CrossEntropyCost(object):
         consistent with the delta method for other cost classes.
 
         """
-        return (a - y)
+        encoded = one_hot_encoding(y, n_classes=10)
+        b = a - encoded
+        return b

@@ -89,9 +89,9 @@ def conv(t, tk, stride=(1, 1), padding=(1, 1), out=None):
         for j in range(t.shape[1]):
             for k in range(n_kernels):
                 convolution = 0
-                for l in range(n_channels):
-                    _i, _j = i - tk.shape[0] // 2, j - tk.shape[1] // 2
+                _i, _j = i - tk.shape[0] // 2, j - tk.shape[1] // 2
 
+                for l in range(n_channels):
                     for m in range(tk.shape[0]):
                         for n in range(tk.shape[1]):
                             if -1 < _i + m < t.shape[0] and -1 < _j + n < \
@@ -103,6 +103,19 @@ def conv(t, tk, stride=(1, 1), padding=(1, 1), out=None):
     return out
 
 
+def transpose(a, axes=None):
+    if axes is not None:
+        raise NotImplementedError
+
+    out = np.empty(a.shape[1], a.shape[0])
+
+    for i in range(a.shape[0]):
+        for j in range(a.shape[1]):
+            out[j, i] = a[i, j]
+
+    return out
+
+
 operations = {
     'add': add,
     'sub': sub,
@@ -111,4 +124,5 @@ operations = {
     'scale': scale,
     'sum': sum,
     'conv': conv,
+    'transpose': transpose,
 }

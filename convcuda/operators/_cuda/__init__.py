@@ -51,7 +51,7 @@ def _pairwise_operation(k, a, b, out=None):
     if not out: out = np.empty(a.shape, dtype=np.float32)
 
     shape = out.shape
-    if len(shape) == 1: shape = (shape[0], 1)
+    if len(shape) == 1: shape = (1, shape[0])
 
     op = kernels[k + '.cu'].get_function(k)
     op(In(a), In(b), Out(out),
@@ -101,6 +101,32 @@ def dot(a, b, out=None):
 
 
 def scale(alpha, a, out=None):
+    if not out: out = np.empty(a.shape, dtype=np.float32)
+
+    if len(a.shape) == 1 or a.shape[0] == 1 or a.shape[1] == 1:
+        shape = (1, max(a.shape))
+        g = utils.distributed_vector(shape[1])
+
+        max_threads = settings.block[0] * settings.block[1] * settings.block[2]
+        b = (min(shape[1], max_threads), 1, 1)
+    else:
+        shape = a.shape
+        g = utils.distributed_grid(shape)
+        b = settings.block
+
+    op = kernels['mat_scale.cu'].get_function('mat_scale')
+    op(np.float32(alpha), In(a.astype(np.float32)), Out(out),
+       np.int32(shape[0]), np.int32(shape[1]),
+       grid=g, block=b)
+
+    return out.reshape(a.shape).astype(a.dtype)
+
+
+def sum(a, axis=None, dtype=None, out=None, keepdims=False):
+    raise NotImplementedError
+
+
+def add_bias(a, bias, out=None):
     original_type = a.dtype
     a = a.astype(np.float32)
 
@@ -109,20 +135,32 @@ def scale(alpha, a, out=None):
     shape = a.shape
     if len(shape) == 1: shape = (shape[0], 1)
 
-    op = kernels['mat_scale.cu'].get_function('mat_scale')
-    op(np.float32(alpha), In(a), Out(out),
-       np.int32(shape[0]), np.int32(shape[1]),
+    # TODO: Test this.
+    op = kernels['mat_add_bias.cu'].get_function('mat_add_bias')
+    op(In(a), In(bias), Out(out),
+       *np.int32(shape),
+       np.int32(bias.shape[0]),
        grid=utils.distributed_grid(shape), block=settings.block)
 
     return out.astype(original_type)
 
 
-def sum(a, axis=None, dtype=None, out=None, keepdims=False):
-    raise NotImplementedError
-
-
 def conv(t, tk, stride=(1, 1), padding=(1, 1)):
     raise NotImplementedError
+
+
+def transpose(a, axes=None):
+    if axes is not None:
+        raise NotImplementedError
+
+    out = np.empty(a.shape[1], a.shape[0])
+
+    op = kernels['mat_transpose.cu'].get_function('mat_transpose')
+    op(In(a), Out(out),
+       np.int32(a.shape[0]), np.int32(a.shape[1]),
+       grid=utils.distributed_grid(a.shape), block=settings.block)
+
+    return out
 
 
 operations = {
@@ -133,4 +171,5 @@ operations = {
     'scale': scale,
     'sum': sum,
     'conv': conv,
+    'transpose': transpose,
 }

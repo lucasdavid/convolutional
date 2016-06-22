@@ -1,2 +1,2 @@
-from . import activations
-from .base import Network
+from . import operators as op
+from .operators import Device

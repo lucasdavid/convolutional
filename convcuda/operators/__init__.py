@@ -1,3 +1,5 @@
+import numpy as np
+
 from . import _sequential, _vectorized, _cuda
 from .. import settings
 
@@ -27,6 +29,20 @@ def set_mode(device):
         _operations = _sequential.operations
     elif device == 'gpu':
         _operations = _cuda.operations
+
+
+def get_mode():
+    """Get the mode in which the operations are currently set.
+
+    :return str: 'vectorized', 'sequential' or 'gpu'.
+    """
+    global _operations
+    if _operations == _vectorized.operations:
+        return 'vectorized'
+    if _operations == _sequential.operations:
+        return 'sequential'
+    if _operations == _cuda.operations:
+        return 'gpu'
 
 
 # Set operation mode to the default.
@@ -79,3 +95,40 @@ def sum(a, axis=None, dtype=None, out=None, keepdims=False):
 def conv(t, tk, stride=(1, 1), padding=(1, 1), out=None):
     return _run_operator('conv', t, tk,
                          stride=stride, padding=padding, out=out)
+
+
+def add_bias(a, bias, out=None):
+    return _run_operator('add_bias', a, bias, out=out)
+
+
+def transpose(a, axes=None):
+    return _run_operator('transpose', a, axes=axes)
+
+
+def argmax(a, axis=None, out=None):
+    # TODO Define this operator in all modules.
+    return np.argmax(a, axis=axis, out=out)
+
+
+class Device(object):
+    """Helper class for clean scope setting.
+
+    Example:
+        >>> # Default device is 'vectorized'
+        >>> with Device('gpu') as s:
+        >>>    ... # Do some work with the GPU.
+        >>> # Vectorized device is in use once again.
+    """
+
+    def __init__(self, device_name):
+        self.device_name = device_name
+        self.previous_device = None
+
+    def __enter__(self):
+        self.previous_device = get_mode()
+        set_mode(self.device_name)
+
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        set_mode(self.previous_device)
