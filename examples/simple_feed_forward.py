@@ -6,7 +6,7 @@ Author: Lucas David -- <ld492@drexel.edu>
 License: MIT License 2016 (c)
 """
 
-from convcuda import networks, `
+from convcuda import networks, Device
 from convcuda.utils import Timer, dataset_loader
 
 # operators.set_mode('sequential')
@@ -33,14 +33,14 @@ def main():
         print('Training our model...')
 
         with Device('gpu'):
-            # Training with the GPU.
+            # Training step with the GPU.
             nn = networks.FullyConnected([784, 392, 10], **PARAMS)
             nn.fit(*data['train'])
 
         print('Done (%s)' % t.get_time_hhmmss())
 
-        # Testing with the default (vectorized) device.
         with Device('vectorized'):
+            # Predicting step with the default (vectorized) device.
             score = nn.score(*data['test'])
         print('Score: %.4f' % score)
 

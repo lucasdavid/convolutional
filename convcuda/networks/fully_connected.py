@@ -45,7 +45,10 @@ class FullyConnected(NetworkBase, ClassifierMixin):
 
             self.update_mini_batch(X_batch, y_batch, n_samples)
 
-            if self.verbose and j % (self.epochs // 10) == 0:
+            if self.verbose and (j % (self.epochs // 10) == 0 or
+                                 j == self.epochs - 1):
+                # If verbose and epoch is dividable by 10 or
+                # if it's the last one.
                 print("[%i], loss: %.2f" % (j, self.loss_ / self.n_batch))
 
         return self
