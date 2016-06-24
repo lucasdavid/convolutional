@@ -91,9 +91,9 @@ def conv(t, tk, stride=(1, 1), padding=(1, 1), out=None):
                 convolution = 0
                 _i, _j = i - tk.shape[0] // 2, j - tk.shape[1] // 2
 
-                for l in range(n_channels):
-                    for m in range(tk.shape[0]):
-                        for n in range(tk.shape[1]):
+                for m in range(tk.shape[0]):
+                    for n in range(tk.shape[1]):
+                        for l in range(n_channels):
                             if -1 < _i + m < t.shape[0] and -1 < _j + n < \
                                     t.shape[1]:
                                 convolution += t[_i + m, _j + n, l] * tk[
@@ -101,6 +101,14 @@ def conv(t, tk, stride=(1, 1), padding=(1, 1), out=None):
 
                 out[i, j, k] = convolution
     return out
+
+
+def add_bias(a, bias, out=None):
+    flatten_a = a.ravel()
+    if out is None: out = np.empty(flatten_a.shape)
+
+    for i in range(flatten_a.shape):
+        out[i] = flatten_a[i] + bias
 
 
 def transpose(a, axes=None):
@@ -124,5 +132,6 @@ operations = {
     'scale': scale,
     'sum': sum,
     'conv': conv,
+    'add_bias': add_bias,
     'transpose': transpose,
 }

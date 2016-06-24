@@ -9,6 +9,8 @@ class Convolutional(TransformerMixin):
         self.kernels = kernels
         self.n_layers = len(kernels)
 
+        self.weights = self.biases = None
+
     def add_conv_layer(self, tk, stride=(1, 1), padding=(1, 1)):
         self.kernels.append((tk, stride, padding))
 

@@ -84,10 +84,9 @@ def dot(a, b, out=None):
     a = np.atleast_2d(a.astype(np.float32))
     b = np.atleast_2d(b.astype(np.float32))
 
-    assert a.shape[1] == b.shape[0], \
-        ('Cannot apply dot operator on matrices. '
-         'Incompatible shapes: %s and %s.' % (a.shape, b.shape))
-
+    assert a.shape[1] == b.shape[0], ('Cannot apply dot operator on matrices.'
+                                      ' Incompatible shapes: %s and %s.'
+                                      % (a.shape, b.shape))
     shape = (a.shape[0], b.shape[1])
     if not out: out = np.empty(shape).astype(np.float32)
 
@@ -135,7 +134,6 @@ def add_bias(a, bias, out=None):
     shape = a.shape
     if len(shape) == 1: shape = (shape[0], 1)
 
-    # TODO: Test this.
     op = kernels['mat_add_bias.cu'].get_function('mat_add_bias')
     op(In(a), In(bias), Out(out),
        *np.int32(shape),
@@ -145,8 +143,26 @@ def add_bias(a, bias, out=None):
     return out.astype(original_type)
 
 
-def conv(t, tk, stride=(1, 1), padding=(1, 1)):
-    raise NotImplementedError
+def conv(t, tk, stride=(1, 1), padding=(1, 1), out=None):
+    """Compute the convolution between two tensor of rank 3."""
+    assert len(t.shape) == len(tk.shape) == 3
+
+    # Output has the entering tensor `t`'s width and height,
+    # and channel count equal to the number of kernels in `tk`.
+    shape = t.shape[:2] + tk.shape[-1:]
+
+    if not out: out = np.empty(shape).astype(np.float32)
+    assert out.shape == shape
+
+    op = kernels['conv.cu'].get_function('conv')
+    op(In(t.astype(np.float32)), In(tk.astype(np.float32)), Out(out),
+
+       np.int32(t.shape[0]), np.int32(t.shape[1]), np.int32(t.shape[2]),
+       np.int32(tk.shape[0]), np.int32(tk.shape[1]), np.int32(tk.shape[2]),
+
+       grid=utils.distributed_grid(shape), block=settings.block)
+
+    return out.astype(t.dtype)
 
 
 def transpose(a, axes=None):
