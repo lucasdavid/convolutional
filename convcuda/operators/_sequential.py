@@ -104,11 +104,20 @@ def conv(t, tk, stride=(1, 1), padding=(1, 1), out=None):
 
 
 def add_bias(a, bias, out=None):
-    flatten_a = a.ravel()
-    if out is None: out = np.empty(flatten_a.shape)
+    a_3d = np.atleast_3d(a)
+    bias = np.atleast_1d(bias)
 
-    for i in range(flatten_a.shape[0]):
-        out[i] = flatten_a[i] + bias
+    assert a_3d.shape[2] == bias.shape[0]
+
+    if out is None: out = np.empty(a_3d.shape)
+
+    for k in range(a_3d.shape[2]):
+        # For each kernel
+        for i in range(a_3d.shape[0]):
+            for j in range(a_3d.shape[1]):
+                out[i, j, k] = a_3d[i, j, k] + bias[k]
+
+    return out.reshape(a.shape).astype(a.dtype)
 
 
 def transpose(a, axes=None):

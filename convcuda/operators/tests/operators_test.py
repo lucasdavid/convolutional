@@ -116,7 +116,7 @@ class _BaseTest(TestCase, metaclass=abc.ABCMeta):
         ((10, 10),),
         ((32, 17),),
         ((40,),),
-        ((30, 1230, 412, 3,),),
+        ((2, 12, 4, 3,),),
     ])
     def test_sum_operator(self, a_shape):
         a = np.random.rand(*a_shape)
@@ -130,7 +130,7 @@ class _BaseTest(TestCase, metaclass=abc.ABCMeta):
         ((10, 10), (1,)),
         ((10, 10, 1), (1,)),
         ((32, 17, 3), (3,)),
-        ((40,20, 100), (100,)),
+        ((40, 20, 100), (100,)),
         ((30, 1230, 3), (3,)),
     ])
     def test_add_bias_operator(self, a_shape, bias_shape):

@@ -87,11 +87,6 @@ def hadamard(a, b, out=None):
     return _run_operator('hadamard', a, b, out=out)
 
 
-def sum(a, axis=None, dtype=None, out=None, keepdims=False):
-    return _run_operator('sum', a,
-                         axis=axis, dtype=dtype, out=out, keepdims=keepdims)
-
-
 def conv(t, tk, stride=(1, 1), padding=(1, 1), out=None):
     return _run_operator('conv', t, tk,
                          stride=stride, padding=padding, out=out)
@@ -105,8 +100,11 @@ def transpose(a, axes=None):
     return _run_operator('transpose', a, axes=axes)
 
 
+def sum(a, axis=None, dtype=None, out=None, keepdims=False):
+    return np.sum(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+
+
 def argmax(a, axis=None, out=None):
-    # TODO Define this operator in all modules.
     return np.argmax(a, axis=axis, out=out)
 
 

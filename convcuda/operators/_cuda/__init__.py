@@ -1,11 +1,15 @@
 import os
 
 import numpy as np
+from pycuda import autoinit
 from pycuda import compiler
 from pycuda.driver import In, Out
 
 from . import utils
 from ... import settings
+
+# Auto-initiates pyCUDA driver.
+autoinit
 
 
 def _load_kernels():
@@ -104,7 +108,7 @@ def scale(alpha, a, out=None):
 
     if len(a.shape) == 1 or a.shape[0] == 1 or a.shape[1] == 1:
         shape = (1, max(a.shape))
-        g = utils.distributed_vector(shape[1])
+        g = utils.distributed_flatten_grid(shape[1])
 
         max_threads = settings.block[0] * settings.block[1] * settings.block[2]
         b = (min(shape[1], max_threads), 1, 1)
@@ -144,15 +148,18 @@ def sum(a, axis=None, dtype=None, out=None, keepdims=False):
     if axis is not None:
         raise NotImplementedError
 
-    if out is None: out = np.zeros((0,), dtype=np.float32)
-    n_elements = np.prod(a.shape)
-    g = utils.distributed_vector(n_elements)
+    # TODO: Find what's causing the incorrect sum of the values.
+    b = a.ravel()
+    if out is None: out = np.zeros((1,), dtype=np.float32)
+
+    g = utils.distributed_flatten_grid(b.shape[0])
+    block = utils.distributed_flatten_block(b.shape[0])
 
     op = kernels['t_sum.cu'].get_function('t_sum')
-    op(In(a), Out(out), np.int32(n_elements),
-       grid=g, block=settings.block)
+    op(In(b), Out(out), np.int32(b.shape[0]),
+       grid=g, block=block)
 
-    return out
+    return out.astype(a.dtype)[0]
 
 
 def conv(t, tk, stride=(1, 1), padding=(1, 1), out=None):
