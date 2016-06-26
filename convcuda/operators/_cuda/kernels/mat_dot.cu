@@ -2,8 +2,8 @@ __global__ void
 mat_dot(float *a, float *b, float *c,
         int a_rows, int a_columns, int b_rows, int b_columns)
 {
-    const int i = %(N_THREADS_0)s * blockIdx.y + threadIdx.y,
-              j = %(N_THREADS_1)s * blockIdx.x + threadIdx.x;
+    const int i = blockDim.y * blockIdx.y + threadIdx.y,
+              j = blockDim.x * blockIdx.x + threadIdx.x;
 
     if (i < a_rows && j < b_columns)
     {

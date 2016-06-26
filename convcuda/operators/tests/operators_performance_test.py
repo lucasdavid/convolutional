@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import numpy as np
 from nose_parameterized import parameterized
-from convcuda import operators as op
+from convcuda import op
 
 
 class PerformanceTest(TestCase):
@@ -11,15 +11,15 @@ class PerformanceTest(TestCase):
         ((4, 4), (4, 4), ('sequential', 'gpu'), 1.2),
         ((4, 4), (4, 4), ('vectorized', 'gpu'), 4),
 
-        ((12, 24), (24, 32), ('gpu', 'sequential'), 10),
+        ((12, 24), (24, 32), ('gpu', 'sequential'), 7),
         ((12, 24), (24, 32), ('vectorized', 'sequential'), 64),
-        ((12, 24), (24, 32), ('gpu', 'vectorized'), 10),
+        ((12, 24), (24, 32), ('vectorized', 'gpu'), 28),
 
         ((243, 45), (45, 67), ('gpu', 'sequential'), 64),
         ((243, 45), (45, 67), ('vectorized', 'sequential'), 64),
-        ((243, 45), (45, 67), ('gpu', 'vectorized'), 10),
+        ((243, 45), (45, 67), ('vectorized', 'gpu'), 4),
 
-        ((2048, 2048), (2048, 2048), ('gpu', 'vectorized'), 2),
+        ((2048, 2048), (2048, 2048), ('vectorized', 'gpu'), 2),
     ])
     def test_had_speedup(self, shape_a, shape_b, modes, min_speed_up):
         a, b = np.random.rand(*shape_a), np.random.rand(*shape_b)

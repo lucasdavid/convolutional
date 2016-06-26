@@ -1,9 +1,9 @@
 import os
 
 import numpy as np
-import pycuda.autoinit
 from pycuda import compiler
 from pycuda.driver import In, Out
+
 from . import utils
 from ... import settings
 
@@ -121,30 +121,42 @@ def scale(alpha, a, out=None):
     return out.reshape(a.shape).astype(a.dtype)
 
 
-def sum(a, axis=None, dtype=None, out=None, keepdims=False):
-    raise NotImplementedError
-
-
 def add_bias(a, bias, out=None):
-    original_type = a.dtype
-    a = a.astype(np.float32)
+    a_3d = np.atleast_3d(a).astype(np.float32)
+    bias = np.atleast_1d(bias).astype(np.float32)
 
-    if not out: out = np.empty(a.shape, dtype=np.float32)
+    # Assert biases count is equal to kernels count.
+    assert bias.shape[0] == a_3d.shape[2]
 
-    shape = a.shape
-    if len(shape) == 1: shape = (shape[0], 1)
+    if not out: out = np.empty(a_3d.shape, dtype=np.float32)
 
-    op = kernels['mat_add_bias.cu'].get_function('mat_add_bias')
-    op(In(a), In(bias), Out(out),
-       *np.int32(shape),
-       np.int32(bias.shape[0]),
-       grid=utils.distributed_grid(shape), block=settings.block)
+    op = kernels['add_bias.cu'].get_function('add_bias')
+    g = utils.distributed_grid(a_3d.shape)
+    op(In(a_3d), In(bias), Out(out),
+       np.int32(a_3d.shape[0]), np.int32(a_3d.shape[1]),
+       np.int32(a_3d.shape[2]),
+       grid=g, block=settings.block)
 
-    return out.astype(original_type)
+    return out.reshape(a.shape).astype(a.dtype)
+
+
+def sum(a, axis=None, dtype=None, out=None, keepdims=False):
+    if axis is not None:
+        raise NotImplementedError
+
+    if out is None: out = np.zeros((0,), dtype=np.float32)
+    n_elements = np.prod(a.shape)
+    g = utils.distributed_vector(n_elements)
+
+    op = kernels['t_sum.cu'].get_function('t_sum')
+    op(In(a), Out(out), np.int32(n_elements),
+       grid=g, block=settings.block)
+
+    return out
 
 
 def conv(t, tk, stride=(1, 1), padding=(1, 1), out=None):
-    """Compute the convolution between two tensor of rank 3."""
+    """Compute the convolution between two tensors of rank 3."""
     assert len(t.shape) == len(tk.shape) == 3
 
     # Output has the entering tensor `t`'s width and height,
@@ -156,10 +168,7 @@ def conv(t, tk, stride=(1, 1), padding=(1, 1), out=None):
 
     op = kernels['conv.cu'].get_function('conv')
     op(In(t.astype(np.float32)), In(tk.astype(np.float32)), Out(out),
-
-       np.int32(t.shape[0]), np.int32(t.shape[1]), np.int32(t.shape[2]),
-       np.int32(tk.shape[0]), np.int32(tk.shape[1]), np.int32(tk.shape[2]),
-
+       *np.int32(t.shape), *np.int32(tk.shape),
        grid=utils.distributed_grid(shape), block=settings.block)
 
     return out.astype(t.dtype)
@@ -187,5 +196,6 @@ operations = {
     'scale': scale,
     'sum': sum,
     'conv': conv,
+    'add_bias': add_bias,
     'transpose': transpose,
 }

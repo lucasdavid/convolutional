@@ -14,7 +14,7 @@ def scale(alpha, a, out=None):
 
 
 def add_bias(a, bias, out=None):
-    return a + bias
+    return np.add(a, bias, out=out)
 
 
 def conv(t, tk, stride=(1, 1), padding=(1, 1), out=None):

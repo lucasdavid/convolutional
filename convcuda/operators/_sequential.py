@@ -107,7 +107,7 @@ def add_bias(a, bias, out=None):
     flatten_a = a.ravel()
     if out is None: out = np.empty(flatten_a.shape)
 
-    for i in range(flatten_a.shape):
+    for i in range(flatten_a.shape[0]):
         out[i] = flatten_a[i] + bias
 
 

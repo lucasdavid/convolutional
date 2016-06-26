@@ -1,8 +1,8 @@
 __global__ void
 mat_transpose(float *a, float *out, int size_x, int size_y)
 {
-    const int i = %(N_THREADS_0)s * blockIdx.x + threadIdx.x,
-              j = %(N_THREADS_1)s * blockIdx.y + threadIdx.y;
+    const int i = blockDim.y * blockIdx.y + threadIdx.y,
+              j = blockDim.x * blockIdx.x + threadIdx.x;
 
     if (i < size_x && j < size_y)
     {
