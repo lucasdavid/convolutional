@@ -164,7 +164,7 @@ def sum(a, axis=None, dtype=None, out=None, keepdims=False):
 
 def conv(t, tk, stride=(1, 1), padding=(1, 1), out=None):
     """Compute the convolution between two tensors of rank 3."""
-    assert len(t.shape) == len(tk.shape) == 3
+    t, tk = np.atleast_3d(t), np.atleast_3d(tk)
 
     # Output has the entering tensor `t`'s width and height,
     # and channel count equal to the number of kernels in `tk`.

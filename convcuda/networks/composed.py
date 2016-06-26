@@ -1,25 +1,28 @@
+from sklearn.base import ClassifierMixin
+
 from .base import NetworkBase
+from .convolutional import Convolutional
+from .fully_connected import FullyConnected
 
 
+class Composed(NetworkBase, ClassifierMixin):
+    def __init__(self, convolutional_layers=(), connected_layers=(), epochs=20,
+                 n_batch=20, eta=.2, regularization=0.0, verbose=False):
+        super(Composed, self).__init__(
+            layers=convolutional_layers + connected_layers, epochs=epochs,
+            n_batch=n_batch, eta=eta, regularization=regularization,
+            verbose=verbose)
 
-class Composed(NetworkBase):
-    def __init__(self, *networks):
-        super(Composed, self).__init__([])
-        self.networks = networks
+        self.networks = (
+            Convolutional(connected_layers),
+            FullyConnected(FullyConnected)
+        )
 
-    def feedforward(self, X):
-        y = X
-
-        for network in self.networks:
-            y = network.feedforward(y)
-
-        return y
-
-    def fit(self, training_data, epochs, mini_batch_size, eta,
-            lmbda=0.0,
-            evaluation_data=None,
-            monitor_evaluation_cost=False,
-            monitor_evaluation_accuracy=False,
-            monitor_training_cost=False,
-            monitor_training_accuracy=False):
+    def fit(self, X, y=None, **fit_params):
         raise NotImplementedError
+
+    def predict(self, X):
+        for nn in self.networks[:-1]:
+            X = nn.transform(X)
+
+        return self.networks[-1].predict(X)

@@ -26,32 +26,12 @@ class FullyConnected(NetworkBase, ClassifierMixin):
             regularization=regularization, verbose=verbose)
 
         self.cost = cost
-        self.loss_ = None
+        self.initialize_random_weights()
 
-        self._initialize()
-
-    def _initialize(self):
+    def initialize_random_weights(self):
         self.biases = [np.random.randn(y, 1) for y in self.layers[1:]]
         self.weights = [np.random.randn(y, x) / np.sqrt(x)
                         for x, y in zip(self.layers[:-1], self.layers[1:])]
-
-    def fit(self, X, y):
-        n_samples = X.shape[0]
-
-        for j in range(self.epochs):
-            self.loss_ = 0
-            p = np.random.permutation(n_samples)
-            X_batch, y_batch = X[p][:self.n_batch], y[p][:self.n_batch]
-
-            self.update_mini_batch(X_batch, y_batch, n_samples)
-
-            if self.verbose and (j % (self.epochs // 10) == 0 or
-                                 j == self.epochs - 1):
-                # If verbose and epoch is dividable by 10 or
-                # if it's the last one.
-                print("[%i], loss: %.2f" % (j, self.loss_ / self.n_batch))
-
-        return self
 
     def predict(self, X):
         a = np.atleast_2d(X).transpose()
@@ -60,33 +40,7 @@ class FullyConnected(NetworkBase, ClassifierMixin):
 
         return op.argmax(a, axis=0)
 
-    def update_mini_batch(self, X, labels, n_samples):
-        """Update the network's weights and biases by applying gradient
-        descent using backpropagation to a single mini batch.  The
-        ``mini_batch`` is a list of tuples ``(x, y)``, ``eta`` is the
-        learning rate, ``lmbda`` is the regularization parameter, and
-        ``n`` is the total size of the training data set.
-
-        """
-        batch_size = X.shape[0]
-
-        nabla_b = [np.zeros(b.shape) for b in self.biases]
-        nabla_w = [np.zeros(w.shape) for w in self.weights]
-
-        for x, y in zip(X, labels):
-            delta_nabla_b, delta_nabla_w = self.backprop(x, y)
-            nabla_b = [op.add(nb, dnb) for nb, dnb in
-                       zip(nabla_b, delta_nabla_b)]
-            nabla_w = [op.add(nw, dnw) for nw, dnw in
-                       zip(nabla_w, delta_nabla_w)]
-        self.weights = [
-            (op.scale((1 - self.eta * (self.regularization / n_samples)), w) -
-             op.scale(self.eta / batch_size, nw))
-            for w, nw in zip(self.weights, nabla_w)]
-        self.biases = [b - op.scale(self.eta / batch_size, nb)
-                       for b, nb in zip(self.biases, nabla_b)]
-
-    def backprop(self, x, y):
+    def back_propagation(self, x, y):
         """Return a tuple ``(nabla_b, nabla_w)`` representing the
         gradient for the cost function C_x.  ``nabla_b`` and
         ``nabla_w`` are layer-by-layer lists of numpy arrays, similar

@@ -11,7 +11,7 @@ def _pairwise_operation(op, a, b, out=None):
 
     for i in range(shape[0]):
         for j in range(shape[1]):
-            out[i][j] = op(a[i][j], b[i][j])
+            out[i, j] = op(a[i, j], b[i, j])
 
     return out
 
@@ -79,6 +79,7 @@ def sum(a, axis=None, dtype=None, out=None, keepdims=False):
 
 
 def conv(t, tk, stride=(1, 1), padding=(1, 1), out=None):
+    t = np.atleast_3d(t)
     n_channels = t.shape[2]
     n_kernels = tk.shape[2]
 

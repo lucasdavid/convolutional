@@ -2,23 +2,22 @@
 
 Train a simple Feed-forward neural network to recognize the mnist data set.
 
-Author: Lucas David -- <ld492@drexel.edu>
+Authors:
+    Lucas David   -- <ld492@drexel.edu>
+    Paulo Finardi -- <ra144809@ime.unicamp.br>
+
 License: MIT License 2016 (c)
 """
 
 from convcuda import networks, Device
 from convcuda.utils import Timer, dataset_loader
 
-# operators.set_mode('sequential')
-# operators.set_mode('gpu')
-
-
 PARAMS = {
     'epochs': 1000,
     'n_batch': 10,
     'eta': .1,
     'regularization': 0,
-    'verbose': True
+    'verbose': True,
 }
 
 
@@ -30,19 +29,19 @@ def main():
                         dataset_loader.load_data()))
         print('Done (%s).' % t.get_time_hhmmss())
 
-        print('Training our model...')
+        for device_name in ('gpu', 'vectorized'):
+            print('Training our model on {%s} device...' % device_name)
+            t.restart()
 
-        with Device('gpu'):
-            # Training step with the GPU.
-            nn = networks.FullyConnected([784, 392, 10], **PARAMS)
-            nn.fit(*data['train'])
+            with Device(device_name):
+                nn = networks.FullyConnected([784, 392, 10], **PARAMS)
+                nn.fit(*data['train'])
 
-        print('Done (%s)' % t.get_time_hhmmss())
+            with Device('vectorized'):
+                print('Score on test data-set: %.4f' % nn.score(*data['test']))
 
-        with Device('vectorized'):
-            # Predicting step with the default (vectorized) device.
-            score = nn.score(*data['test'])
-        print('Score: %.4f' % score)
+            print('Done (%s).' % t.get_time_hhmmss())
+            del nn
 
     except KeyboardInterrupt:
         print('Interrupted by user (%s)' % t.get_time_hhmmss())

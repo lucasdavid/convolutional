@@ -15,6 +15,6 @@ setup(
 
     url='https://github.com/lucasdavid/convolutional-cuda',
     download_url='https://github.com/lucasdavid/convolutional-cuda/archive/master.zip',
-    install_requires=['numpy', 'pycuda'],
+    install_requires=['numpy', 'pycuda', 'scikit-learn'],
     tests_require=open('requirements-dev.txt').readlines(),
 )
