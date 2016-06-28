@@ -1,7 +1,7 @@
-"""Classifying with Convolutional Networks.
+"""Training of a Composed Neural Network.
 
-Train a predicting samples from the MNIST data-set using a network composed
-by convolutional and fully connected layers.
+Trains a Neural Network composed by two convolutional layers and
+three fully connected layers using the gpu.
 
 Authors:
     Lucas David   -- <ld492@drexel.edu>
@@ -11,7 +11,7 @@ License: MIT License 2016 (c)
 """
 
 from convcuda import Device
-from convcuda.networks import Composed, Convolutional, FullyConnected
+from convcuda.networks import Composed
 from convcuda.utils import Timer, dataset_loader
 
 PARAMS = {
@@ -22,6 +22,8 @@ PARAMS = {
     'verbose': True,
 }
 
+OPERATION_MODE = 'gpu'
+
 
 def main():
     t = Timer()
@@ -31,25 +33,25 @@ def main():
                         dataset_loader.load_data()))
         print('Done (%s).' % t.get_time_hhmmss())
 
-        for device_name in ('gpu', 'vectorized'):
-            print('Training our model on {%s} device...' % device_name)
-            t.restart()
+        print('Training our model on {%s} device...' % OPERATION_MODE)
+        t.restart()
 
-            with Device(device_name):
-                composed = Composed(
-                    convolutional_layers=(
-                        ([3, 3, 10], [2, 2], [4, 4]),
-                        ([3, 3, 100], [2, 2], [4, 4]),
-                    ),
-                    connected_layers=[784, 392, 10],
-                    **PARAMS)
-                composed.fit(*data['train'])
+        with Device(OPERATION_MODE):
+            composed = (Composed(
+                convolutional_layers=(
+                    ([3, 3, 10], [2, 2], [4, 4]),
+                    ([3, 3, 100], [2, 2], [4, 4]),
+                ),
+                connected_layers=(
+                    78400, 392, 10
+                ),
+                **PARAMS).fit(*data['train']))
 
-            with Device('vectorized'):
-                print('Score on test data-set: %.4f' % composed.score(*data['test']))
+        print('Done (%s).' % t.get_time_hhmmss())
+        score = composed.score(*data['test'])
+        print('Score on test data-set: %.4f' % score)
 
-            print('Done (%s).' % t.get_time_hhmmss())
-            del composed
+        del composed
 
     except KeyboardInterrupt:
         print('Interrupted by user (%s)' % t.get_time_hhmmss())

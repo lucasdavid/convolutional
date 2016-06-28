@@ -20,11 +20,14 @@ class Convolutional(NetworkBase, TransformerMixin):
     """
 
     def __init__(self, layers, epochs=20, n_batch=20, eta=.2,
-                 regularization=0.0, verbose=False):
+                 regularization=0.0, incremental=False, verbose=False):
         super(Convolutional, self).__init__(
             layers, epochs=epochs, n_batch=n_batch, eta=eta,
-            regularization=regularization, verbose=verbose)
+            regularization=regularization, incremental=incremental,
+            verbose=verbose)
         self.initialize_random_weights()
+
+        self.output_delta = None
 
     def add_conv_layer(self, tk, stride=(1, 1), padding=(1, 1)):
         self.layers.append((tk, stride, padding))
@@ -40,18 +43,42 @@ class Convolutional(NetworkBase, TransformerMixin):
 
     def feed_forward(self, X):
         """Return the output of the network if `a` is input."""
-        y = X
+        y = X.reshape((-1, 28, 28, 1))
 
-        for k, W, b in zip(self.layers, self.weights, self.biases):
-            y = op.add_bias(op.conv(y, W, stride=k[1], padding=k[2]), b)
+        transformed = []
 
-        return y
+        for sample in y:
+            for k, W, b in zip(self.layers, self.weights, self.biases):
+                sample = op.conv(sample, W, stride=k[1], padding=k[2])
+                sample = op.add_bias(sample, b)
+            transformed.append(sample)
+
+        return np.array(transformed)
 
     def fit_transform(self, X, y=None, **fit_params):
         return self.fit(X, y=y, **fit_params).transform(X)
 
     def transform(self, X, y=None):
         return self.feed_forward(X)
+
+    def fit(self, X, y=None, **fit_params):
+        n_epochs = 1 if self.incremental else self.epochs
+        n_samples = X.shape[0]
+
+        for j in range(n_epochs):
+            self.score_history_ = 0
+            p = np.random.permutation(n_samples)
+            X_batch, y_batch = X[p][:self.n_batch], y[p][:self.n_batch]
+
+            self.SGD(X_batch, y_batch, n_samples)
+
+            if self.verbose and (j % min(1, self.epochs // 10) == 0 or
+                                         j == self.epochs - 1):
+                # If verbose and epoch is dividable by 10 or
+                # if it's the last one.
+                print("[%i], loss: %.2f" % (j, self.score_ / self.n_batch))
+
+        return self
 
     def back_propagation(self, x, y):
         """Return a tuple ``(nabla_b, nabla_w)`` representing the
@@ -64,18 +91,17 @@ class Convolutional(NetworkBase, TransformerMixin):
         nabla_b = [np.zeros(b.shape) for b in self.biases]
 
         # feedforward
-        output = x.reshape(28, 28)
+        output = x.reshape(28, 28, -1)
         os = [output]
 
         for k, W, b in zip(self.layers, self.weights, self.biases):
-            z = op.conv(output, W, stride=k[1], padding=k[2])
-            z = op.add_bias(z, b)
-            output = z
+            output = op.add_bias(op.conv(output, W, stride=k[1], padding=k[2]),
+                                 b)
             os.append(output)
 
         # backward pass
-        delta = self.cost.delta(os[-1], os[-1], y)
-        self.loss_ += np.sum(np.abs(delta))
+        delta = self.output_delta.reshape((28, 28, -1))
+        self.score_history_ += np.sum(np.abs(delta))
 
         nabla_b[-1] = delta
         nabla_w[-1] = op.dot(delta, os[-2].transpose())

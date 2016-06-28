@@ -1,0 +1,57 @@
+/media/ldavid/hdd/linux/envs/conv/bin/python /media/ldavid/hdd/repositories/convolutional-cuda/examples/training_fc_vectorized.py
+Simple Training of a Fully Connected Network on CPUs.
+
+Train a simple Feed-forward neural network to recognize the mnist data set.
+
+Authors:
+    Lucas David   -- <ld492@drexel.edu>
+    Paulo Finardi -- <ra144809@ime.unicamp.br>
+
+License: MIT License 2016 (c)
+
+Loading MNIST dataset...
+Done (00:00:00).
+Training our model with vectorized operations...
+[0], score: 0.14
+[100], score: 0.30
+[200], score: 0.71
+[300], score: 0.66
+[400], score: 0.79
+[500], score: 0.80
+[600], score: 0.84
+[700], score: 0.82
+[800], score: 0.83
+[900], score: 0.81
+[999], score: 0.80
+Done (00:01:12).
+Score on test data-set: 0.86
+
+Process finished with exit code 0
+
+----------------
+
+/media/ldavid/hdd/linux/envs/conv/bin/python /media/ldavid/hdd/repositories/convolutional-cuda/examples/fully_connected_all_modes.py
+Training of a Fully Connected Network on All Modes
+('sequential', 'vectorized' and 'gpu').
+
+Train a simple Feed-forward neural network to recognize the mnist data set.
+
+Authors:
+    Lucas David   -- <ld492@drexel.edu>
+    Paulo Finardi -- <ra144809@ime.unicamp.br>
+
+License: MIT License 2016 (c)
+
+Loading MNIST dataset...
+Done (00:00:00).
+Training our model with sequential operations...
+Done (00:01:17).
+Score on test data-set: 0.10
+Training our model with gpu operations...
+Done (00:00:02).
+Score on test data-set: 0.15
+Training our model with vectorized operations...
+Done (00:00:00).
+Score on test data-set: 0.11
+
+Process finished with exit code 0

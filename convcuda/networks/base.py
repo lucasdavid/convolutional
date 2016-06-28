@@ -8,7 +8,7 @@ from .. import op
 
 class NetworkBase(BaseEstimator):
     def __init__(self, layers, epochs=20, n_batch=20, eta=.2,
-                 regularization=0.0, verbose=False):
+                 regularization=0.0, incremental=False, verbose=False):
         self.layers = layers
         self.n_layers = len(layers)
 
@@ -16,12 +16,45 @@ class NetworkBase(BaseEstimator):
         self.n_batch = n_batch
         self.eta = eta
         self.regularization = regularization
+        self.incremental = incremental
         self.verbose = verbose
 
         self.weights = []
         self.biases = []
 
-        self.loss_ = None
+        self.score_ = None
+        self.score_history_ = []
+
+        self.input_delta_ = None
+
+    def SGD(self, X, labels, n_samples):
+        """Update the network's weights and biases by applying gradient
+        descent using backpropagation to a single mini batch.
+        """
+        batch_size = X.shape[0]
+
+        nabla_b = [np.zeros(b.shape) for b in self.biases]
+        nabla_w = [np.zeros(w.shape) for w in self.weights]
+
+        delta = np.zeros((np.prod(X.shape) // X.shape[0], 1))
+
+        for x, y in zip(X, labels):
+            delta_nabla_b, delta_nabla_w, _delta = self.back_propagation(x, y)
+            nabla_b = [op.add(nb, dnb) for nb, dnb in
+                       zip(nabla_b, delta_nabla_b)]
+            nabla_w = [op.add(nw, dnw) for nw, dnw in
+                       zip(nabla_w, delta_nabla_w)]
+
+            delta = op.add(delta, _delta)
+
+        self.weights = [
+            (op.scale((1 - self.eta * (self.regularization / n_samples)), w) -
+             op.scale(self.eta / batch_size, nw))
+            for w, nw in zip(self.weights, nabla_w)]
+        self.biases = [op.sub(b, op.scale(self.eta / batch_size, nb))
+                       for b, nb in zip(self.biases, nabla_b)]
+
+        return delta
 
     def save(self, filename):
         """Save the neural network to the file ``filename``."""
@@ -50,43 +83,3 @@ class NetworkBase(BaseEstimator):
         nn.weights = [np.array(w) for w in data["weights"]]
         nn.biases = [np.array(b) for b in data["biases"]]
         return nn
-
-    def fit(self, X, y=None, **fit_params):
-        n_samples = X.shape[0]
-
-        for j in range(self.epochs):
-            self.loss_ = 0
-            p = np.random.permutation(n_samples)
-            X_batch, y_batch = X[p][:self.n_batch], y[p][:self.n_batch]
-
-            self.SGD(X_batch, y_batch, n_samples)
-
-            if self.verbose and (j % (self.epochs // 10) == 0 or
-                                         j == self.epochs - 1):
-                # If verbose and epoch is dividable by 10 or
-                # if it's the last one.
-                print("[%i], loss: %.2f" % (j, self.loss_ / self.n_batch))
-
-        return self
-
-    def SGD(self, X, labels, n_samples):
-        """Update the network's weights and biases by applying gradient
-        descent using backpropagation to a single mini batch.
-        """
-        batch_size = X.shape[0]
-
-        nabla_b = [np.zeros(b.shape) for b in self.biases]
-        nabla_w = [np.zeros(w.shape) for w in self.weights]
-
-        for x, y in zip(X, labels):
-            delta_nabla_b, delta_nabla_w = self.back_propagation(x, y)
-            nabla_b = [op.add(nb, dnb) for nb, dnb in
-                       zip(nabla_b, delta_nabla_b)]
-            nabla_w = [op.add(nw, dnw) for nw, dnw in
-                       zip(nabla_w, delta_nabla_w)]
-        self.weights = [
-            (op.scale((1 - self.eta * (self.regularization / n_samples)), w) -
-             op.scale(self.eta / batch_size, nw))
-            for w, nw in zip(self.weights, nabla_w)]
-        self.biases = [b - op.scale(self.eta / batch_size, nb)
-                       for b, nb in zip(self.biases, nabla_b)]

@@ -17,7 +17,7 @@ class QuadraticCost(object):
         return 0.5 * np.linalg.norm(a - y) ** 2
 
     @staticmethod
-    def delta(z, a, y):
+    def delta(a, y):
         """Return the error delta from the output layer."""
         return (a - y) * DERIVATIVES['logistic'](a)
 
@@ -33,10 +33,12 @@ class CrossEntropyCost(object):
         to the correct value (0.0).
 
         """
-        return np.sum(np.nan_to_num(-y * np.log(a) - (1 - y) * np.log(1 - a)))
+        encoded_y = one_hot_encoding(y, n_classes=10)
+        return np.sum(
+            np.nan_to_num(-y * np.log(a) - (1 - encoded_y) * np.log(1 - a)))
 
     @staticmethod
-    def delta(z, a, y):
+    def delta(a, y):
         """Return the error delta from the output layer.  Note that the
         parameter ``z`` is not used by the method.  It is included in
         the method's parameters in order to make the interface

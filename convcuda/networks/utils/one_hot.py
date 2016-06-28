@@ -15,4 +15,5 @@ def one_hot_encoding(y, n_classes=None):
 
     """
     if n_classes is None: n_classes = np.max(y) + 1
+
     return np.eye(n_classes)[y].reshape(-1, 1)

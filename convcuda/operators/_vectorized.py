@@ -14,6 +14,9 @@ def scale(alpha, a, out=None):
 
 
 def add_bias(a, bias, out=None):
+    n_kernels = a.shape[-1]
+    assert bias.shape[0] == n_kernels
+
     return np.add(a, bias, out=out)
 
 

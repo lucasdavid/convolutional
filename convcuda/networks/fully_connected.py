@@ -1,4 +1,4 @@
-"""Network.
+"""Fully Connected Network.
 
 This is an adapted version of the code originally implemented by
 Michael Nielsen, in 2016, and it is still available at this
@@ -18,12 +18,16 @@ from .. import operators as op
 
 
 class FullyConnected(NetworkBase, ClassifierMixin):
+    """Fully Connected Multilayer Perceptron."""
+
     def __init__(self, layers, epochs=20, n_batch=20, eta=.2,
-                 regularization=0.0, cost=costs.CrossEntropyCost,
+                 regularization=0.0, incremental=False,
+                 cost=costs.CrossEntropyCost,
                  verbose=False):
         super(FullyConnected, self).__init__(
             layers, epochs=epochs, n_batch=n_batch, eta=eta,
-            regularization=regularization, verbose=verbose)
+            regularization=regularization, incremental=incremental,
+            verbose=verbose)
 
         self.cost = cost
         self.initialize_random_weights()
@@ -33,23 +37,67 @@ class FullyConnected(NetworkBase, ClassifierMixin):
         self.weights = [np.random.randn(y, x) / np.sqrt(x)
                         for x, y in zip(self.layers[:-1], self.layers[1:])]
 
-    def predict(self, X):
-        a = np.atleast_2d(X).transpose()
-        for b, w in zip(self.biases, self.weights):
-            a = ACTIVATIONS['logistic'](op.add(op.dot(w, a), b))
+    def fit(self, X, y=None, **fit_params):
+        n_epochs = 1 if self.incremental else self.epochs
+        n_samples = X.shape[0]
+        first_layer_delta = np.zeros((self.layers[0], 1))
 
-        return op.argmax(a, axis=0)
+        for j in range(n_epochs):
+            p = np.random.permutation(n_samples)
+            X_batch, y_batch = X[p][:self.n_batch], y[p][:self.n_batch]
+
+            delta = self.SGD(X_batch, y_batch, n_samples)
+            op.add(first_layer_delta, delta)
+
+            if 'validation_data' in fit_params:
+                self.calculate_score(*fit_params['validation_data'])
+
+                if (self.verbose and
+                    (j % max(1, self.epochs // 10) == 0 or
+                     j == self.epochs - 1)):
+
+                    self.calculate_score(*fit_params['validation_data'])
+                    print("[%i], score: %.2f" % (j, self.score_))
+
+        first_layer_delta = op.scale(1 / (n_epochs * self.n_batch),
+                                     first_layer_delta)
+        self.input_delta_ = first_layer_delta
+
+        return self
+
+    def calculate_score(self, X, y):
+        """Compute loss as defined by the cost function."""
+        self.score_ = self.score(X, y)
+        self.score_history_.append(self.score_)
+
+        return self.score_
+
+    def feed_forward(self, X):
+        os = []
+
+        for x in X:
+            x = x.reshape(-1, 1)
+            for b, w in zip(self.biases, self.weights):
+                x = ACTIVATIONS['logistic'](op.add(op.dot(w, x), b))
+
+            os.append(x)
+
+        return np.array(os)
+
+    def predict(self, X):
+        A = self.feed_forward(X).reshape(X.shape[0], -1)
+        return op.argmax(A, axis=1)
 
     def back_propagation(self, x, y):
-        """Return a tuple ``(nabla_b, nabla_w)`` representing the
-        gradient for the cost function C_x.  ``nabla_b`` and
-        ``nabla_w`` are layer-by-layer lists of numpy arrays, similar
-        to ``self.biases`` and ``self.weights``."""
+        """Propagate errors, computing the gradients of the weights and biases.
 
+        :return: tuple `(nabla_b, nabla_w, delta)`
+
+        """
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
 
-        # feedforward
+        # feed-forward inputs.
         output = x.reshape(-1, 1)
         os = [output]
         zs = []
@@ -59,23 +107,19 @@ class FullyConnected(NetworkBase, ClassifierMixin):
             output = ACTIVATIONS['logistic'](z)
             os.append(output)
 
-        # backward pass
-        delta = self.cost.delta(zs[-1], os[-1], y)
-        self.loss_ += np.sum(np.abs(delta))
+        # Backward error propagation itself.
+        delta = self.cost.delta(os[-1], y)
 
         nabla_b[-1] = delta
         nabla_w[-1] = op.dot(delta, os[-2].transpose())
-        # Note that the variable l in the loop below is used a little
-        # differently to the notation in Chapter 2 of the book.  Here,
-        # l = 1 means the last layer of neurons, l = 2 is the
-        # second-last layer, and so on.  It's a renumbering of the
-        # scheme in the book, used here to take advantage of the fact
-        # that Python can use negative indices in lists.
+
         for l in range(2, self.n_layers):
             o = os[-l]
             sp = DERIVATIVES['logistic'](o)
             d = op.dot(self.weights[-l + 1].transpose(), delta)
             delta = op.hadamard(sp, d)
             nabla_b[-l] = delta
-            nabla_w[-l] = op.dot(delta, os[-l - 1].transpose())
-        return nabla_b, nabla_w
+            a = os[-l - 1].transpose()
+            nabla_w[-l] = op.dot(delta, a)
+
+        return nabla_b, nabla_w, op.dot(self.weights[0].transpose(), delta)
