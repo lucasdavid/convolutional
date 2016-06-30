@@ -104,6 +104,8 @@ def dot(a, b, out=None):
 
 
 def scale(alpha, a, out=None):
+    original_shape = a.shape
+
     if not out: out = np.empty(a.shape, dtype=np.float32)
 
     if len(a.shape) == 1 or a.shape[0] == 1 or a.shape[1] == 1:
@@ -113,16 +115,16 @@ def scale(alpha, a, out=None):
         max_threads = settings.block[0] * settings.block[1] * settings.block[2]
         b = (min(shape[1], max_threads), 1, 1)
     else:
-        shape = a.shape
-        g = utils.distributed_grid(shape)
+        a = np.atleast_3d(a)
+        g = utils.distributed_grid(a.shape)
         b = settings.block
 
     op = kernels['mat_scale.cu'].get_function('mat_scale')
     op(np.float32(alpha), In(a.astype(np.float32)), Out(out),
-       np.int32(shape[0]), np.int32(shape[1]),
+       np.int32(a.shape[0]), np.int32(a.shape[1]), np.int32(a.shape[2]),
        grid=g, block=b)
 
-    return out.reshape(a.shape).astype(a.dtype)
+    return out.reshape(original_shape).astype(a.dtype)
 
 
 def add_bias(a, bias, out=None):

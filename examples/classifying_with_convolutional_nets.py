@@ -10,7 +10,8 @@ Authors:
 License: MIT License 2016 (c)
 """
 
-from convcuda import Device
+import numpy as np
+from convcuda import Device, op
 from convcuda.networks import Composed
 from convcuda.utils import Timer, dataset_loader
 

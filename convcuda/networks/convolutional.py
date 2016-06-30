@@ -41,6 +41,8 @@ class Convolutional(NetworkBase, TransformerMixin):
         self.biases = [np.random.randn(k[2], 1)
                        for k, stride, padding in self.layers]
 
+        return self
+
     def feed_forward(self, X):
         """Return the output of the network if `a` is input."""
         y = X.reshape((-1, 28, 28, 1))

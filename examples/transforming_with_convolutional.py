@@ -20,10 +20,9 @@ PARAMS = {
     'verbose': True
 }
 
-OPERATION_MODES = ('sequential',
-                   # 'vectorized',
-                   'gpu')
-DATA_SIZE = 1
+OPERATION_MODES = ('gpu',)
+DATA_SIZE = 100
+
 
 def main():
     t = Timer()
