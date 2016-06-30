@@ -66,25 +66,15 @@ class Convolutional(NetworkBase, TransformerMixin):
         n_samples = X.shape[0]
 
         for j in range(n_epochs):
-            self.score_history_ = 0
             p = np.random.permutation(n_samples)
             X_batch, y_batch = X[p][:self.n_batch], y[p][:self.n_batch]
 
             self.SGD(X_batch, y_batch, n_samples)
 
-            if self.verbose and (j % min(1, self.epochs // 10) == 0 or
-                                         j == self.epochs - 1):
-                # If verbose and epoch is dividable by 10 or
-                # if it's the last one.
-                print("[%i], loss: %.2f" % (j, self.score_ / self.n_batch))
-
         return self
 
     def back_propagation(self, x, y):
-        """Return a tuple ``(nabla_b, nabla_w)`` representing the
-        gradient for the cost function C_x.  ``nabla_b`` and
-        ``nabla_w`` are layer-by-layer lists of numpy arrays, similar
-        to ``self.biases`` and ``self.weights``.
+        """Propagate errors, computing the gradients of the weights and biases.
         """
 
         nabla_w = [np.zeros(w.shape) for w in self.weights]
@@ -95,27 +85,23 @@ class Convolutional(NetworkBase, TransformerMixin):
         os = [output]
 
         for k, W, b in zip(self.layers, self.weights, self.biases):
-            output = op.add_bias(op.conv(output, W, stride=k[1], padding=k[2]),
-                                 b)
+            output = op.add_bias(
+                op.conv(output, W, stride=k[1], padding=k[2]), b)
             os.append(output)
 
-        # backward pass
+        # Backward error propagation.
+        # Restore tensor to kernels shape.
         delta = self.output_delta.reshape((28, 28, -1))
-        self.score_history_ += np.sum(np.abs(delta))
 
-        nabla_b[-1] = delta
-        nabla_w[-1] = op.dot(delta, os[-2].transpose())
-        # Note that the variable l in the loop below is used a little
-        # differently to the notation in Chapter 2 of the book.  Here,
-        # l = 1 means the last layer of neurons, l = 2 is the
-        # second-last layer, and so on.  It's a renumbering of the
-        # scheme in the book, used here to take advantage of the fact
-        # that Python can use negative indices in lists.
-        for l in range(2, self.n_layers):
-            o = os[-l]
-            sp = DERIVATIVES['logistic'](o)
-            d = op.dot(self.weights[-l + 1].transpose(), delta)
-            delta = op.hadamard(sp, d)
-            nabla_b[-l] = delta
-            nabla_w[-l] = op.dot(delta, os[-l - 1].transpose())
-        return nabla_b, nabla_w
+        nabla_b[-1] = op.sum(op.sum(delta, axis=0), axis=0)
+        nabla_w[-1] = np.rot90(op.conv(np.rot90(os[-2], k=2), delta), k=2)
+
+        for l in range(2, self.n_layers + 1):
+            w = self.weights[-l]
+            delta = op.conv(delta, np.rot90(w, k=2))
+
+            nabla_b[-l] = op.sum(op.sum(delta, axis=0), axis=0)
+            nabla_w[-l] = np.rot90(op.conv(np.rot90(os[-l - 1], k=2), delta),
+                                   k=2)
+
+        return nabla_b, nabla_w, delta

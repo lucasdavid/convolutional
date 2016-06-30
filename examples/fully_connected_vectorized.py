@@ -17,14 +17,13 @@ from convcuda import networks, Device
 from convcuda.utils import Timer, dataset_loader
 
 NN_PARAMS = {
-    'epochs': 1000,
+    'epochs': 100,
     'n_batch': 10,
     'eta': .1,
     'regularization': 0,
     'verbose': True,
 }
 
-VALID_SIZE = 100
 OPERATION_MODE = 'vectorized'
 
 
@@ -32,8 +31,7 @@ def main():
     t = Timer()
     try:
         print('Loading MNIST dataset...')
-        train, (X_valid, y_valid), test = dataset_loader.load_data()
-        X_valid, y_valid = X_valid[:VALID_SIZE], y_valid[:VALID_SIZE]
+        train, _, test = dataset_loader.load_data()
         print('Done (%s).' % t.get_time_hhmmss())
 
         print('Training our model with %s operations...' % OPERATION_MODE)
@@ -42,12 +40,12 @@ def main():
         with Device(OPERATION_MODE):
             nn = (networks
                   .FullyConnected([784, 392, 10], **NN_PARAMS)
-                  .fit(*train, validation_data=(X_valid, y_valid)))
+                  .fit(*train))
 
             print('Done (%s).' % t.get_time_hhmmss())
             print('Score on test data-set: %.2f' % nn.score(*test))
 
-        save_scores(nn.score_history_)
+        # save_scores(nn.score_history_)
 
     except KeyboardInterrupt:
         print('Interrupted by user (%s)' % t.get_time_hhmmss())

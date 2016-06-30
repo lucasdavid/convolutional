@@ -17,7 +17,10 @@ def add_bias(a, bias, out=None):
     n_kernels = a.shape[-1]
     assert bias.shape[0] == n_kernels
 
-    return np.add(a, bias, out=out)
+    if out is None: out = np.array(a, copy=True)
+
+    out[:, :, range(bias.shape[0])] += bias.ravel()
+    return out
 
 
 def conv(t, tk, stride=(1, 1), padding=(1, 1), out=None):

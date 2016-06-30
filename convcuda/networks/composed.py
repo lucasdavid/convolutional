@@ -32,7 +32,6 @@ class Composed(NetworkBase, ClassifierMixin):
         cnn, fc = self.networks
 
         for j in range(n_epochs):
-            self.score_history_ = 0
             p = np.random.permutation(n_samples)
             X_batch, y_batch = X[p][:self.n_batch], y[p][:self.n_batch]
 
@@ -41,11 +40,14 @@ class Composed(NetworkBase, ClassifierMixin):
             cnn.output_delta = fc.input_delta_
             cnn.fit(X_batch, y_batch)
 
-            if self.verbose and (j % min(1, self.epochs // 10) == 0 or
-                                         j == self.epochs - 1):
-                # If verbose and epoch is dividable by 10 or
-                # if it's the last one.
-                print("[%i], loss: %.2f" % (j, self.score_ / self.n_batch))
+            if 'validation_data' in fit_params:
+                self.score_ = self.score(X, y)
+                self.score_history_.append(self.score_)
+
+                if (self.verbose and
+                        (j % max(1, self.epochs // 10) == 0 or
+                                 j == self.epochs - 1)):
+                    print("[%i], score: %.2f" % (j, self.score_))
 
         return self
 

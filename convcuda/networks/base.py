@@ -38,7 +38,7 @@ class NetworkBase(BaseEstimator):
 
         delta = np.zeros((np.prod(X.shape) // X.shape[0], 1))
 
-        for x, y in zip(X, labels):
+        for i, (x, y) in enumerate(zip(X, labels)):
             delta_nabla_b, delta_nabla_w, _delta = self.back_propagation(x, y)
             nabla_b = [op.add(nb, dnb) for nb, dnb in
                        zip(nabla_b, delta_nabla_b)]

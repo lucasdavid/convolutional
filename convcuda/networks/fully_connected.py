@@ -50,13 +50,12 @@ class FullyConnected(NetworkBase, ClassifierMixin):
             op.add(first_layer_delta, delta)
 
             if 'validation_data' in fit_params:
-                self.calculate_score(*fit_params['validation_data'])
+                self.score_ = self.score(X, y)
+                self.score_history_.append(self.score_)
 
                 if (self.verbose and
                     (j % max(1, self.epochs // 10) == 0 or
                      j == self.epochs - 1)):
-
-                    self.calculate_score(*fit_params['validation_data'])
                     print("[%i], score: %.2f" % (j, self.score_))
 
         first_layer_delta = op.scale(1 / (n_epochs * self.n_batch),
@@ -64,13 +63,6 @@ class FullyConnected(NetworkBase, ClassifierMixin):
         self.input_delta_ = first_layer_delta
 
         return self
-
-    def calculate_score(self, X, y):
-        """Compute loss as defined by the cost function."""
-        self.score_ = self.score(X, y)
-        self.score_history_.append(self.score_)
-
-        return self.score_
 
     def feed_forward(self, X):
         os = []
