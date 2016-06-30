@@ -20,8 +20,8 @@ PARAMS = {
     'verbose': True
 }
 
-OPERATION_MODES = ('gpu',)
-DATA_SIZE = 100
+OPERATION_MODES = ('sequential', 'vectorized', 'gpu',)
+DATA_SIZE = 300
 
 
 def main():
@@ -77,9 +77,9 @@ def save_figures(modes, times):
     ax.get_yaxis().tick_left()
 
     plt.yticks(fontsize=10)
-    plt.xticks(np.arange(len(modes)) + width / 2, modes, fontsize=10)
+    plt.xticks(np.arange(len(modes)) + width / 2, modes, fontsize=14)
 
-    plt.title('Time Elapsed on Training and Testing', y=1.05)
+    plt.title('Time Elapsed on Convolutional Feed-forward', y=1.05)
     plt.tick_params(axis="both", which="both", bottom="off", top="off",
                     labelbottom="on", left="off", right="off",
                     labelleft="on")
