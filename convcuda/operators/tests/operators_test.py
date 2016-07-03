@@ -126,8 +126,8 @@ class _BaseTest(TestCase, metaclass=abc.ABCMeta):
         self.assertAlmostEqual(expected, actual, delta=.00001)
 
     @parameterized.expand([
-        ((1,), (1,)),
-        ((10, 10), (1,)),
+        ((1, 1, 1), (1,)),
+        ((10, 10, 10), (10,)),
         ((10, 10, 1), (1,)),
         ((32, 17, 3), (3,)),
         ((40, 20, 100), (100,)),
@@ -137,7 +137,8 @@ class _BaseTest(TestCase, metaclass=abc.ABCMeta):
         a = np.random.rand(*a_shape)
         bias = np.random.rand(*bias_shape)
 
-        expected = np.add(a, bias)
+        expected = np.array(a, copy=True)
+        expected[:, :, range(bias.shape[0])] += bias
         actual = op.add_bias(a, bias)
 
         assert_array_almost_equal(expected, actual, decimal=6)

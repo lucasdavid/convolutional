@@ -45,24 +45,25 @@ kernels = _load_kernels()
 
 def _pairwise_operation(k, a, b, out=None):
     """Perform a kernel assuming its a pairwise operation."""
+    original_type = a.dtype
+    original_shape = a.shape
+
+    a, b = a.ravel(), b.ravel()
+
     assert a.shape == b.shape, \
         ('Cannot apply %s on matrices. Incompatible shapes: %s and %s.' %
          (k, a.shape, b.shape))
 
-    original_type = a.dtype
     a, b = a.astype(np.float32), b.astype(np.float32)
 
     if not out: out = np.empty(a.shape, dtype=np.float32)
 
-    shape = out.shape
-    if len(shape) == 1: shape = (1, shape[0])
-
     op = kernels[k + '.cu'].get_function(k)
     op(In(a), In(b), Out(out),
-       np.int32(shape[0]), np.int32(shape[1]),
-       grid=utils.distributed_grid(shape), block=settings.block)
+       np.int32(a.shape[0]),
+       grid=utils.distributed_flatten_grid(a.shape), block=settings.block)
 
-    return out.astype(original_type)
+    return out.astype(original_type).reshape(original_shape)
 
 
 def add(a, b, out=None):
@@ -109,19 +110,20 @@ def scale(alpha, a, out=None):
     if not out: out = np.empty(a.shape, dtype=np.float32)
 
     if len(a.shape) == 1 or a.shape[0] == 1 or a.shape[1] == 1:
-        shape = (1, max(a.shape))
+        shape = (1, max(a.shape), 1)
         g = utils.distributed_flatten_grid(shape[1])
 
         max_threads = settings.block[0] * settings.block[1] * settings.block[2]
         b = (min(shape[1], max_threads), 1, 1)
     else:
         a = np.atleast_3d(a)
+        shape = a.shape
         g = utils.distributed_grid(a.shape)
         b = settings.block
 
     op = kernels['mat_scale.cu'].get_function('mat_scale')
     op(np.float32(alpha), In(a.astype(np.float32)), Out(out),
-       np.int32(a.shape[0]), np.int32(a.shape[1]), np.int32(a.shape[2]),
+       np.int32(shape[0]), np.int32(shape[1]), np.int32(shape[2]),
        grid=g, block=b)
 
     return out.reshape(original_shape).astype(a.dtype)

@@ -3,6 +3,11 @@
 Operations such as `hadamad`, `dot` or `conv` implemented through
 multiple back-ends and provided by an abstract layer.
 
+Authors:
+
+* Lucas Oliveira David 188972
+* Paulo Ricardo Finardi 144809
+
 ## Installing and Testing
 
 This project has [pyCUDA](https://documen.tician.de/pycuda/index.html)

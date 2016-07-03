@@ -9,7 +9,7 @@ from convcuda import op
 class PerformanceTest(TestCase):
     @parameterized.expand([
         ((4, 4), (4, 4), ('sequential', 'gpu'), 1.2),
-        ((4, 4), (4, 4), ('vectorized', 'gpu'), 4),
+        ((4, 4), (4, 4), ('vectorized', 'gpu'), 3),
 
         ((12, 24), (24, 32), ('gpu', 'sequential'), 7),
         ((12, 24), (24, 32), ('vectorized', 'sequential'), 64),

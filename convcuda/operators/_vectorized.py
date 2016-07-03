@@ -15,11 +15,12 @@ def scale(alpha, a, out=None):
 
 def add_bias(a, bias, out=None):
     n_kernels = a.shape[-1]
-    assert bias.shape[0] == n_kernels
+    bias = bias.ravel()
+    assert bias.shape[0] == n_kernels, 'Bias must have the same amount of kernels (%i, %i)' % (bias.shape[0], n_kernels)
 
     if out is None: out = np.array(a, copy=True)
 
-    out[:, :, range(bias.shape[0])] += bias.ravel()
+    out[:, :, range(bias.shape[0])] += bias
     return out
 
 
