@@ -5,7 +5,7 @@ import numpy as np
 from nose_parameterized import parameterized
 from numpy.testing import assert_array_almost_equal
 
-import convcuda.operators as op
+import convolutional.operators as op
 
 
 class _BaseTest(TestCase, metaclass=abc.ABCMeta):

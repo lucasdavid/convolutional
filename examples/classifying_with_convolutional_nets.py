@@ -11,9 +11,9 @@ License: MIT License 2016 (c)
 """
 
 import numpy as np
-from convcuda import Device, op
-from convcuda.networks import Composed
-from convcuda.utils import Timer, dataset_loader
+from convolutional import Device, op
+from convolutional.networks import Composed
+from convolutional.utils import Timer, dataset_loader
 
 PARAMS = {
     'epochs': 1000,

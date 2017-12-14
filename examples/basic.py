@@ -1,6 +1,6 @@
 from numpy.testing import assert_array_almost_equal
 import numpy as np
-from convcuda import op, Device
+from convolutional import op, Device
 
 
 def main():

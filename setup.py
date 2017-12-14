@@ -4,11 +4,11 @@ except ImportError:
     from distutils.core import setup
 
 setup(
-    name='convcuda',
+    name='convolutional',
     description='Convolutional Networks implemented in CUDA.',
     long_description=open('README.md').read(),
     version='0.1',
-    packages=['convcuda'],
+    packages=['convolutional'],
     scripts=[],
     author='Lucas David, Paulo Finaridi',
     author_email='lucasolivdavid@gmail.com',

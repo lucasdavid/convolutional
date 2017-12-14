@@ -13,8 +13,8 @@ License: MIT License 2016 (c)
 import matplotlib.pyplot as plt
 import numpy as np
 
-from convcuda import networks, Device
-from convcuda.utils import Timer, dataset_loader
+from convolutional import networks, Device
+from convolutional.utils import Timer, dataset_loader
 
 PARAMS = {
     'verbose': True

@@ -14,7 +14,7 @@ This project has [pyCUDA](https://documen.tician.de/pycuda/index.html)
 as a dependency! Please refer to the installation page for info on
 [how to install pyCUDA](https://wiki.tiker.net/PyCuda/Installation/Linux).
 
-With pyCUDA installed, install convcuda:
+With pyCUDA installed, install convolutional:
 ```shell
 python setup.py install --user
 ```
@@ -36,7 +36,7 @@ nosetests
 ```python
 import numpy as np
 from numpy.testing import assert_array_almost_equal
-from convcuda import op, Device
+from convolutional import op, Device
 
 X, W, b = np.array(100, 10), np.array(10, 10), np.array(10,)
 
@@ -58,7 +58,7 @@ Convolutional Networks implementations:
 
 ```python
 import numpy as np
-from convcuda.networks import FullyConnected
+from convolutional.networks import FullyConnected
 
 X, y = np.array(10, 784), np.array(10,)
 

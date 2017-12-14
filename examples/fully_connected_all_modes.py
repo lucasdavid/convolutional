@@ -14,8 +14,8 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from convcuda import networks, Device
-from convcuda.utils import Timer, dataset_loader
+from convolutional import networks, Device
+from convolutional.utils import Timer, dataset_loader
 
 NN_PARAMS = {
     'epochs': 10,

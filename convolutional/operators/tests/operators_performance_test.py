@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import numpy as np
 from nose_parameterized import parameterized
-from convcuda import op
+from convolutional import op
 
 
 class PerformanceTest(TestCase):
